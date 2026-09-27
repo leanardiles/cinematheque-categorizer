@@ -1,5 +1,9 @@
 # Cinematheque Categorizer
 
+![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)
+
+> **Work in progress.** This project is under active development. The core addon pipeline works end to end in Stremio; the database, metadata enrichment, filters, tagging UI and deployment are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
+
 A personal Stremio addon for organizing a saved movie and TV library with custom tags and filters.
 
 Stremio's library has no tags or custom categories. This project adds catalogs to Stremio that show only titles from my own library, filterable by director, country, year, actors, and custom genres. Playback still works through whatever stream addons are installed in Stremio.
@@ -19,6 +23,8 @@ Planned:
 * Sync from the Stremio library
 * React tagging UI
 * Deployment on Vercel
+
+Detailed milestones are in [ROADMAP.md](ROADMAP.md).
 
 ## Stack
 
@@ -100,7 +106,8 @@ cinematheque-categorizer/
 ├── scripts/
 │   ├── dev.sh            Starts backend and tunnel, opens a dev shell
 │   └── venv-shell.rc     Startup file for the dev shell
-└── .env.op               1Password secret references
+├── .env.op               1Password secret references
+└── ROADMAP.md            Milestones and progress
 ```
 
 ## Attribution
