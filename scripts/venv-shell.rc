@@ -1,0 +1,19 @@
+# Startup file for the dev shell opened by scripts/dev.sh.
+# Loads the usual Bash config, then activates the backend venv.
+
+[[ -f ~/.bashrc ]] && source ~/.bashrc
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if [[ -f backend/.venv/Scripts/activate ]]; then
+  source backend/.venv/Scripts/activate
+elif [[ -f backend/.venv/bin/activate ]]; then
+  source backend/.venv/bin/activate
+fi
+
+if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+  echo "Dev shell: $REPO_ROOT (venv active)"
+else
+  echo "Dev shell: $REPO_ROOT (WARNING: venv not activated)"
+fi
