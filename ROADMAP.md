@@ -16,20 +16,22 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ## Milestone 2: Database and collection catalogs
 
-- [ ] SQLAlchemy engine for the Supabase transaction pooler (disable prepared statements, use `NullPool`)
-- [ ] Alembic set up for migrations
-- [ ] Models, all scoped by `user_id` for future multi-user support:
-  - `users`: id, addon token (single user for now)
+- [x] SQLAlchemy engine for the Supabase transaction pooler (prepared statements disabled, `NullPool`)
+- [x] Alembic set up for migrations; initial migration applied
+- [x] Models, all scoped by `user_id` for future multi-user support:
+  - `users`: id, name (addon token stays in environment variables until multi-user support)
   - `titles`: user, IMDb ID, type, name, year, poster; unique on (user, IMDb ID)
-  - `title_sources`: title, source (`manual` for now), first seen, still present
+  - `title_sources`: title, source (`manual` for now), first seen, last seen, still present
   - `collections`: user, name, description, position
-  - `collection_titles`: collection, title, position, date added
-- [ ] Seed script to create collections and add films by IMDb ID (until the UI exists)
-- [ ] Manifest generated from the database: one catalog per collection
-- [ ] Catalog route returns a collection's films in their manual order
-- [ ] Parse and URL-decode `extraArgs`; support `skip` (pages of 100)
-- [ ] Short `Cache-Control` on catalog responses
-- [ ] Verify in Stremio: collection rows on Board, full view in Discover, playback through Torrentio
+  - `collection_titles`: collection, title, position, date added; indexed on title
+- [x] Idempotent seed script to create collections and add films by IMDb ID (until the UI exists)
+- [x] Manifest generated from the database: one catalog per collection and content type
+- [x] Catalog names shown in Stremio as `<collection> Cinematheque` (Stremio appends the type on Board)
+- [x] Catalog route returns a collection's films in their manual order
+- [x] Parse and URL-decode `extraArgs`; support `skip` (pages of 100)
+- [x] Short `Cache-Control` on catalog responses
+- [x] Verify in Stremio Web: collection rows on Board
+- [ ] Verify in Stremio: full view in Discover, playback through Torrentio, Stremio TV app
 
 ## Milestone 3: Management API and web UI
 
@@ -72,3 +74,4 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [ ] Save Stremio addon protocol docs in `docs/reference/stremio-addon-protocol/` (SDK commit `ec4e0a4`)
 - [ ] Renormalize line endings (`git add --renormalize .`)
 - [ ] Tests for catalog routes and collection ordering
+- [ ] Delete the seed test films once real library data is in place
