@@ -2,7 +2,7 @@
 
 ![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)
 
-> **Work in progress.** This project is under active development. The core addon pipeline works end to end in Stremio; the database, collections, management UI and deployment are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
+> **Work in progress.** This project is under active development. The addon is deployed and serves collections from the database to Stremio; the management UI, in-app collection actions and library sync are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
 
 A personal Stremio addon for organizing a saved movie and TV library into collections.
 
@@ -12,17 +12,16 @@ Stremio's library is a flat list with no way to group titles. This project lets 
 
 Early development. Currently working:
 
-* FastAPI backend serving a token-protected Stremio manifest and a sample catalog
-* Local testing in Stremio Web through a Cloudflare quick tunnel
+* FastAPI backend deployed on Vercel, serving a token-protected Stremio manifest
+* Supabase Postgres database with titles and collections, managed with Alembic migrations
+* One Stremio catalog per collection, in a manually arranged order, working in Stremio Web and on TV
+* Local development through a Cloudflare quick tunnel
 
 Planned:
 
-* Supabase Postgres database for titles and collections
-* One Stremio catalog per collection, in a manually arranged order
 * React web UI to create collections and add, remove and reorder films
 * Add to collection from inside Stremio, including the TV app
 * Sync from the Stremio library, with an Unsorted row for films not yet in a collection
-* Deployment on Vercel
 
 Later: Letterboxd watchlist import, TMDB metadata and filters by director, country, year and actor.
 
@@ -33,7 +32,7 @@ Detailed milestones are in [ROADMAP.md](ROADMAP.md).
 * **Backend:** Python, FastAPI, SQLAlchemy
 * **Database:** Supabase Postgres
 * **Frontend:** React + Vite (planned)
-* **Hosting:** Vercel (planned)
+* **Hosting:** Vercel
 * **Metadata:** TMDB API (planned, for filters)
 * **Secrets:** 1Password CLI
 
@@ -47,7 +46,7 @@ The addon URL includes a private token, so the catalogs are accessible only to w
 
 ### Prerequisites
 
-* Python 3.12+
+* Python 3.10+ (production runs 3.12)
 * [1Password CLI](https://developer.1password.com/docs/cli/) with access to the project vault
 * [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (for testing in Stremio Web)
 

@@ -36,15 +36,16 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 - [ ] API endpoints (protected): list library, create, rename, reorder and delete collections, add, remove and reorder films
 - [ ] Add a film to the library by IMDb ID
-- [ ] React + Vite UI: collections sidebar, library grid, add and remove films, drag to reorder
+- [ ] React + Vite UI as a second Vercel project (root directory `frontend`): collections sidebar, library grid, add and remove films, drag to reorder
 - [ ] TMDB attribution in the UI footer
 
-## Milestone 4: Deployment
+## Milestone 4: Deployment (done)
 
-- [ ] Deploy FastAPI and the UI on Vercel
-- [ ] Environment variables in Vercel
-- [ ] Install the production manifest in Stremio; save the URL in 1Password
-- [ ] Test on Stremio desktop, web and TV
+- [x] Deploy FastAPI on Vercel (`cinematheque-api`, root directory `backend`, Python 3.12)
+- [x] Environment variables in Vercel
+- [x] Install the production manifest in Stremio; save the URL in 1Password
+- [x] Test on Stremio Web and TV
+- [ ] Check the Vercel function region is close to the Supabase region
 
 ## Milestone 5: Add to collection from inside Stremio
 
