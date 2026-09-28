@@ -1,12 +1,13 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url: str
-    tmdb_read_token: str
-    addon_token: str
-    api_token: str
-    sync_secret: str
+    database_url: str = Field(min_length=1)
+    tmdb_read_token: str = Field(min_length=1)
+    addon_token: str = Field(min_length=20)
+    api_token: str = Field(min_length=20)
+    sync_secret: str = Field(min_length=20)
 
 
 settings = Settings()
