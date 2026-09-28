@@ -36,7 +36,11 @@ class Title(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     imdb_id: Mapped[str] = mapped_column(String(20))
     type: Mapped[str] = mapped_column(String(10))  # "movie" or "series"
-    name: Mapped[str] = mapped_column(String(300))
+    name: Mapped[str] = mapped_column(String(300))  # display name shown in Stremio and the UI
+    original_title: Mapped[str | None] = mapped_column(String(300))
+    english_name: Mapped[str | None] = mapped_column(String(300))
+    original_language: Mapped[str | None] = mapped_column(String(10))
+    tmdb_id: Mapped[int | None] = mapped_column(Integer)
     year: Mapped[int | None] = mapped_column(Integer)
     poster: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
