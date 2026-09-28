@@ -15,6 +15,14 @@ app.add_middleware(
 
 app.include_router(addon_router)
 
+  @app.get("/")
+  def root():
+      return {
+          "name": "Cinematheque Categorizer API",
+          "description": "Stremio addon serving personal film collections.",
+          "status": "work in progress",
+          "source": "https://github.com/leanardiles/cinematheque-categorizer",
+      }
 
 @app.get("/health")
 def health():
