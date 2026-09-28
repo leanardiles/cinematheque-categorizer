@@ -1,0 +1,30 @@
+:root {
+  /* Surfaces */
+  --color-bg: #14161E;
+  --color-surface: #1B1E2A;         /* sidebar, inputs */
+  --color-surface-raised: #2A2E40;  /* active item, menus */
+  --color-film: #0B0C11;            /* film strip band */
+  --color-sprocket: #2A2D38;
+
+  /* Borders */
+  --color-border: #2E3244;
+  --color-border-strong: #4A4F66;
+
+  /* Text */
+  --color-text: #EDE3CC;            /* cream */
+  --color-text-muted: #A89F8A;
+
+  /* Accent */
+  --color-accent: #D2A24C;          /* gold */
+  --color-accent-hover: #E8BE6E;
+  --color-on-accent: #14161E;
+  --color-danger: #C4473C;
+
+  /* Type */
+  --font-display: 'Playfair Display SC', serif;
+  --font-ui: 'Work Sans', sans-serif;
+
+  /* Shape */
+  --radius: 6px;
+  --touch-target: 44px;
+}
