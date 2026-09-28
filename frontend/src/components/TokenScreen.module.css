@@ -26,10 +26,17 @@
 }
 
 .subtitle {
-  margin: 0 0 16px;
+  margin: 0 0 4px;
   font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.note {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 

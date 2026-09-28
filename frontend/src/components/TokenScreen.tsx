@@ -35,6 +35,13 @@ export default function TokenScreen({ onAuthenticated }: Props) {
       <form className={styles.card} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Cinémathèque</h1>
         <p className={styles.subtitle}>Salle de projection</p>
+        <p className={styles.note}>
+          Private management app for a personal Stremio addon.{' '}
+          <a href="https://github.com/leanardiles/cinematheque-categorizer">
+            View the source on GitHub
+          </a>
+          .
+        </p>
 
         <label className={styles.label} htmlFor="api-token">
           API token
