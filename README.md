@@ -2,11 +2,11 @@
 
 ![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)
 
-> **Work in progress.** This project is under active development. The core addon pipeline works end to end in Stremio; the database, metadata enrichment, filters, tagging UI and deployment are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
+> **Work in progress.** This project is under active development. The core addon pipeline works end to end in Stremio; the database, collections, management UI and deployment are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
 
-A personal Stremio addon for organizing a saved movie and TV library with custom tags and filters.
+A personal Stremio addon for organizing a saved movie and TV library into collections.
 
-Stremio's library has no tags or custom categories. This project adds catalogs to Stremio that show only titles from my own library, filterable by director, country, year, actors, and custom genres. Playback still works through whatever stream addons are installed in Stremio.
+Stremio's library is a flat list with no way to group titles. This project lets me create collections (for example French, Argentinian, LGBTQ) and add films from my library to them, similar to collections on an e-reader. A film can belong to several collections or to none. Each collection appears in Stremio as its own row on the home screen and in Discover, and playback still works through whatever stream addons are installed.
 
 ## Status
 
@@ -17,12 +17,14 @@ Early development. Currently working:
 
 Planned:
 
-* Supabase Postgres database for titles, people, countries, and tags
-* TMDB metadata enrichment (directors, cast, countries, year)
-* Filter catalogs by director, country, year, actor, and custom genre
-* Sync from the Stremio library
-* React tagging UI
+* Supabase Postgres database for titles and collections
+* One Stremio catalog per collection, in a manually arranged order
+* React web UI to create collections and add, remove and reorder films
+* Add to collection from inside Stremio, including the TV app
+* Sync from the Stremio library, with an Unsorted row for films not yet in a collection
 * Deployment on Vercel
+
+Later: Letterboxd watchlist import, TMDB metadata and filters by director, country, year and actor.
 
 Detailed milestones are in [ROADMAP.md](ROADMAP.md).
 
@@ -32,7 +34,7 @@ Detailed milestones are in [ROADMAP.md](ROADMAP.md).
 * **Database:** Supabase Postgres
 * **Frontend:** React + Vite (planned)
 * **Hosting:** Vercel (planned)
-* **Metadata:** TMDB API
+* **Metadata:** TMDB API (planned, for filters)
 * **Secrets:** 1Password CLI
 
 ## How it works
