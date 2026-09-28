@@ -73,26 +73,24 @@ Secrets are not stored in the repo. `.env.op` contains 1Password references that
 
 ### Run
 
-Start the backend and a tunnel together, and open a dev shell at the repo root with the venv active:
+Start the backend and the frontend together, and open a dev shell at the repo root with the venv active:
 
 ```bash
 ./scripts/dev.sh
 ```
 
-Turn off any VPN first, since it can block the tunnel from starting.
+Logs from both appear in the same window, labeled `[api]` and `[web]`. Ctrl+C stops everything.
 
-Or run the backend alone:
+* Frontend: http://localhost:5173
+* Backend: http://localhost:8000 (API docs at `/docs`)
+
+To test the local backend in Stremio, also start a Cloudflare quick tunnel:
 
 ```bash
-cd backend
-op run --env-file=../.env.op -- uvicorn app.main:app --reload
+./scripts/dev.sh --tunnel
 ```
 
-Install the addon in Stremio with:
-
-```
-https://<tunnel-subdomain>.trycloudflare.com/<ADDON_TOKEN>/manifest.json
-```
+Turn off any VPN first, since it can block the tunnel. Install the addon with the printed `https://<tunnel-subdomain>.trycloudflare.com/<ADDON_TOKEN>/manifest.json`. The deployed addon on Vercel doesn't need the tunnel.
 
 ## Project structure
 
@@ -105,7 +103,7 @@ cinematheque-categorizer/
 │   │   └── main.py       FastAPI app and CORS
 │   └── requirements.txt
 ├── scripts/
-│   ├── dev.sh            Starts backend and tunnel, opens a dev shell
+│   ├── dev.sh            Starts backend, frontend and optional tunnel, opens a dev shell
 │   └── venv-shell.rc     Startup file for the dev shell
 ├── .env.op               1Password secret references
 └── ROADMAP.md            Milestones and progress

@@ -48,10 +48,11 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ### Part B: Frontend scaffold and deployment
 
-- [ ] Choose TypeScript or JavaScript, and a styling approach
-- [ ] React + Vite app in `frontend/`
-- [ ] Token screen storing the API token in the browser
-- [ ] API client using `VITE_API_URL`
+- [x] Decisions: TypeScript, CSS Modules with design tokens, visual direction C (Salle de projection: dark, cream text, gold accent, Playfair Display SC and Work Sans, film strip framing)
+- [x] React + Vite + TypeScript app in `frontend/`, design tokens and fonts
+- [x] Token screen that checks the API token and stores it in the browser
+- [x] Typed API client using `VITE_API_URL`, sidebar listing collections
+- [x] `dev.sh` runs backend and frontend in one labeled window, tunnel optional
 - [ ] Second Vercel project (`cinematheque-ui`, root directory `frontend`)
 
 ### Part C: UI features
