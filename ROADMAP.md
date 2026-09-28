@@ -14,7 +14,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Installed in Stremio Web through a Cloudflare quick tunnel
 - [x] Dev script opening backend, tunnel and dev shell windows
 
-## Milestone 2: Database and collection catalogs
+## Milestone 2: Database and collection catalogs (done)
 
 - [x] SQLAlchemy engine for the Supabase transaction pooler (prepared statements disabled, `NullPool`)
 - [x] Alembic set up for migrations; initial migration applied
@@ -30,8 +30,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Catalog route returns a collection's films in their manual order
 - [x] Parse and URL-decode `extraArgs`; support `skip` (pages of 100)
 - [x] Short `Cache-Control` on catalog responses
-- [x] Verify in Stremio Web: collection rows on Board
-- [ ] Verify in Stremio: full view in Discover, playback through Torrentio, Stremio TV app
+- [x] Verify in Stremio: rows on Board, collections in Discover, playback through Torrentio, Stremio Web and TV app
 
 ## Milestone 3: Management API and web UI
 
@@ -60,6 +59,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [ ] Sync endpoint protected by `SYNC_SECRET`; upsert saved titles with source `stremio`
 - [ ] Mark titles removed from the Stremio library instead of deleting them
 - [ ] Unsorted catalog: library titles not in any collection
+- [ ] Cinematheque All catalog: every library title, in collections or not
 - [ ] GitHub Actions scheduled workflow calling the sync endpoint
 
 ## Later
