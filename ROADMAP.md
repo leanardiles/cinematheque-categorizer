@@ -34,9 +34,32 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ## Milestone 3: Management API and web UI
 
-- [ ] API endpoints (protected): list library, create, rename, reorder and delete collections, add, remove and reorder films
-- [ ] Add a film to the library by IMDb ID
-- [ ] React + Vite UI as a second Vercel project (root directory `frontend`): collections sidebar, library grid, add and remove films, drag to reorder
+### Part A: Management API (done)
+
+- [x] `API_TOKEN` bearer auth for `/api` routes, separate from the addon token
+- [x] CORS for Stremio Web and the management UI
+- [x] TMDB client: lookup by IMDb ID, search, original titles (English fallback for non-Latin scripts); Cinemeta as fallback
+- [x] Titles store display name, original title, English name, original language and TMDB ID; existing titles backfilled
+- [x] Collection endpoints: list, create, rename, delete, reorder
+- [x] Library endpoints: list (search, unsorted), add by IMDb ID or TMDB result, rename, delete
+- [x] Collection content endpoints: list, add, remove, reorder films
+- [x] TMDB search endpoint marking titles already in the library
+- [x] Deployed and tested on Vercel
+
+### Part B: Frontend scaffold and deployment
+
+- [ ] Choose TypeScript or JavaScript, and a styling approach
+- [ ] React + Vite app in `frontend/`
+- [ ] Token screen storing the API token in the browser
+- [ ] API client using `VITE_API_URL`
+- [ ] Second Vercel project (`cinematheque-ui`, root directory `frontend`)
+
+### Part C: UI features
+
+- [ ] Collections sidebar: create, rename, delete, drag to reorder
+- [ ] Collection view: poster grid, remove films, drag to reorder (dnd-kit)
+- [ ] Add films: search by title, pick a result, choose collections
+- [ ] Library view: all films with their collections, unsorted filter, switch between original and English title
 - [ ] TMDB attribution in the UI footer
 
 ## Milestone 4: Deployment (done)
