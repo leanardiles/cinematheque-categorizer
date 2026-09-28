@@ -7,27 +7,19 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Collection, CollectionTitle, Title, User
+from app.deps import current_user, tokens_match
+from app.models import Collection, CollectionTitle, Title
 
 router = APIRouter()
 
 PAGE_SIZE = 100  # Stremio's page size; fewer results means end of catalog
-CACHE_SECONDS = 0  # short, so tagging changes show up quickly
+CACHE_SECONDS = 10
 CATALOG_PREFIX = "collection-"
 
 
 def check_token(token: str) -> None:
-    if token != settings.addon_token:
+    if not tokens_match(token, settings.addon_token):
         raise HTTPException(status_code=404)
-
-
-def current_user(db: Session) -> User:
-    # Single user for now: the addon token identifies the one user.
-    # With multi-user support, the token will map to a specific user.
-    user = db.scalar(select(User).order_by(User.id).limit(1))
-    if user is None:
-        raise HTTPException(status_code=404)
-    return user
 
 
 def cached(content: dict) -> JSONResponse:
