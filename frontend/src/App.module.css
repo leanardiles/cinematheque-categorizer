@@ -1,0 +1,22 @@
+.layout {
+  display: flex;
+  height: 100%;
+}
+
+.main {
+  flex-grow: 1;
+  padding: 36px 48px;
+  overflow-y: auto;
+}
+
+.title {
+  font-weight: 900;
+  font-size: 68px;
+  line-height: 0.95;
+}
+
+.meta {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
