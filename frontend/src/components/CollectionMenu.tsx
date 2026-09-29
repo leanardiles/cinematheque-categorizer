@@ -2,11 +2,21 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { Collection } from '../api/types';
 import styles from './CollectionMenu.module.css';
 
+export interface NameChoice {
+  original: string;
+  english: string;
+}
+
 interface Props {
   titleName: string;
   collections: Collection[];
   selectedIds: number[];
   onToggle: (collectionId: number) => void;
+  /** Offered when the film has distinct original and English titles. */
+  nameChoice?: NameChoice;
+  onChooseName?: (name: string) => void;
+  /** Short text at the bottom of the menu, such as where to remove the film. */
+  footnote?: string;
 }
 
 /**
@@ -15,7 +25,15 @@ interface Props {
  * open so several collections can be changed in one go.
  * Closes with Escape, a click outside, or the button itself.
  */
-export default function CollectionMenu({ titleName, collections, selectedIds, onToggle }: Props) {
+export default function CollectionMenu({
+  titleName,
+  collections,
+  selectedIds,
+  onToggle,
+  nameChoice,
+  onChooseName,
+  footnote,
+}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -91,6 +109,32 @@ export default function CollectionMenu({ titleName, collections, selectedIds, on
               ))}
             </ul>
           )}
+
+          {nameChoice && onChooseName && (
+            <fieldset className={styles.section}>
+              <legend className={styles.heading}>Show title as</legend>
+              {[
+                { label: 'Original', value: nameChoice.original },
+                { label: 'English', value: nameChoice.english },
+              ].map((option) => (
+                <label key={option.label} className={styles.option}>
+                  <input
+                    type="radio"
+                    name={`${menuId}-name`}
+                    className={styles.checkbox}
+                    checked={titleName === option.value}
+                    onChange={() => onChooseName(option.value)}
+                  />
+                  <span className={styles.nameOption}>
+                    {option.label}
+                    <span className={styles.nameValue}>{option.value}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          {footnote && <p className={styles.footnote}>{footnote}</p>}
         </div>
       )}
     </div>

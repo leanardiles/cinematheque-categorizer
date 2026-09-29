@@ -19,6 +19,8 @@ const SORT_STORAGE_KEY = 'cinematheque.collectionSort';
 
 interface Props {
   collection: Collection;
+  /** All collections, to show which other ones each film is in. */
+  collections: Collection[];
   onChanged: () => void;
   onDeleted: () => void;
   onUnauthorized: () => void;
@@ -26,6 +28,7 @@ interface Props {
 
 export default function CollectionView({
   collection,
+  collections,
   onChanged,
   onDeleted,
   onUnauthorized,
@@ -120,6 +123,14 @@ export default function CollectionView({
     saveSortKey(SORT_STORAGE_KEY, next);
   }
 
+  /** The film's other collections, in sidebar order (this one left out). */
+  function otherCollections(title: Title): string | undefined {
+    const names = collections
+      .filter((c) => c.id !== collection.id && title.collection_ids.includes(c.id))
+      .map((c) => c.name);
+    return names.length > 0 ? names.join(' · ') : undefined;
+  }
+
   const count = titles?.length ?? collection.title_count;
   const visible = titles ? sortTitles(titles, sortKey) : titles;
   const filmsLeft =
@@ -211,6 +222,7 @@ export default function CollectionView({
               <PosterCard
                 title={title}
                 removeLabel={`Remove ${title.name} from ${collection.name}`}
+                note={otherCollections(title)}
                 onRemove={() => setPendingRemoval(title)}
               />
             </li>

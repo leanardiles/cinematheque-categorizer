@@ -129,6 +129,7 @@ export default function App() {
           <CollectionView
             key={selected.id}
             collection={selected}
+            collections={collections}
             onChanged={loadSidebar}
             onDeleted={() => {
               setView({ kind: 'all' });

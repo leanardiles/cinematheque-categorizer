@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Collection, Title } from '../api/types';
-import CollectionMenu from './CollectionMenu';
+import CollectionMenu, { type NameChoice } from './CollectionMenu';
 import ConfirmDialog from './ConfirmDialog';
 import FilmStrip from './FilmStrip';
 import PosterCard from './PosterCard';
@@ -27,6 +27,12 @@ interface Props {
 type Filter = 'all' | 'unsorted';
 
 const SORT_STORAGE_KEY = 'cinematheque.sort';
+
+/** Both titles, when the film has an original and a different English title. */
+function nameChoice(title: Title): NameChoice | undefined {
+  const { original_title: original, english_name: english } = title;
+  return original && english && original !== english ? { original, english } : undefined;
+}
 
 /** Films synced from Stremio are removed there, not here (see ROADMAP, Milestone 5). */
 function canDelete(title: Title): boolean {
@@ -104,6 +110,24 @@ export default function LibraryView({
       setCollectionIds(title.id, before);
       if (err instanceof ApiError && err.status === 401) onUnauthorized();
       else setError(`Could not update the collections for ${title.name}.`);
+    }
+  }
+
+  async function renameTitle(title: Title, name: string) {
+    if (name === title.name) return;
+    const before = title.name;
+    const setName = (value: string) =>
+      setTitles((current) =>
+        current ? current.map((t) => (t.id === title.id ? { ...t, name: value } : t)) : current,
+      );
+    setName(name);
+    setError(null);
+    try {
+      await api.renameTitle(title.id, name);
+    } catch (err) {
+      setName(before);
+      if (err instanceof ApiError && err.status === 401) onUnauthorized();
+      else setError(`Could not change the title of ${before}.`);
     }
   }
 
@@ -225,6 +249,13 @@ export default function LibraryView({
                       collections={collections}
                       selectedIds={title.collection_ids}
                       onToggle={(collectionId) => toggleCollection(title, collectionId)}
+                      nameChoice={nameChoice(title)}
+                      onChooseName={(name) => renameTitle(title, name)}
+                      footnote={
+                        canDelete(title)
+                          ? undefined
+                          : 'From your Stremio library. To remove it, remove it in Stremio; it disappears here on the next sync.'
+                      }
                     />
                   }
                 />
