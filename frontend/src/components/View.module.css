@@ -124,10 +124,12 @@
   white-space: nowrap;
 }
 
-/* All / Unsorted switch */
+/* All / Unsorted switch, under the page title */
 .segmented {
   display: flex;
   flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 8px;
   padding: 3px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);

@@ -4,7 +4,16 @@
 }
 
 .main {
+  position: relative;
   flex-grow: 1;
   padding: 36px 48px;
   overflow-y: auto;
+}
+/* Search sits at the top right, level with the page title, without pushing it down */
+.topBar {
+  position: absolute;
+  top: 36px;
+  right: 48px;
+  z-index: 5;
+  width: min(340px, calc(100% - 96px));
 }

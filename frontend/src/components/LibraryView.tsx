@@ -5,10 +5,13 @@ import CollectionMenu from './CollectionMenu';
 import ConfirmDialog from './ConfirmDialog';
 import FilmStrip from './FilmStrip';
 import PosterCard from './PosterCard';
+import { matchesQuery } from '../lib/search';
 import styles from './View.module.css';
 
 interface Props {
   collections: Collection[];
+  /** When set, shows only films matching this search, across the whole library. */
+  query?: string;
   onChanged: () => void;
   onUnauthorized: () => void;
 }
@@ -20,7 +23,12 @@ function canDelete(title: Title): boolean {
   return !title.sources.includes('stremio');
 }
 
-export default function LibraryView({ collections, onChanged, onUnauthorized }: Props) {
+export default function LibraryView({
+  collections,
+  query = '',
+  onChanged,
+  onUnauthorized,
+}: Props) {
   const [titles, setTitles] = useState<Title[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Title | null>(null);
@@ -110,45 +118,51 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
   }
 
   const unsortedCount = titles?.filter((t) => t.collection_ids.length === 0).length ?? 0;
-  const visible =
-    titles && filter === 'unsorted'
-      ? titles.filter((t) => t.collection_ids.length === 0 || justFiled.has(t.id))
-      : titles;
+  const searching = query.trim() !== '';
+  const visible = !titles
+    ? titles
+    : searching
+      ? titles.filter((t) => matchesQuery(t, query))
+      : filter === 'unsorted'
+        ? titles.filter((t) => t.collection_ids.length === 0 || justFiled.has(t.id))
+        : titles;
 
-  const meta = !titles
+  const meta = !titles || !visible
     ? ' '
-    : filter === 'all'
-      ? `${titles.length} ${titles.length === 1 ? 'film' : 'films'} in your library`
-      : `${unsortedCount} ${unsortedCount === 1 ? 'film' : 'films'} not in a collection yet`;
+    : searching
+      ? `${visible.length} ${visible.length === 1 ? 'film matches' : 'films match'} “${query.trim()}”`
+      : filter === 'all'
+        ? `${titles.length} ${titles.length === 1 ? 'film' : 'films'} in your library`
+        : `${unsortedCount} ${unsortedCount === 1 ? 'film' : 'films'} not in a collection yet`;
 
   return (
     <section className={styles.view} aria-labelledby="view-title">
-      <header className={styles.headerRow}>
-        <div className={styles.header}>
-          <h1 id="view-title" className={styles.title}>
-            All
-          </h1>
-          <p className={styles.meta}>{meta}</p>
-        </div>
-        <div className={styles.segmented} role="group" aria-label="Show">
-          <button
-            type="button"
-            className={styles.segment}
-            aria-pressed={filter === 'all'}
-            onClick={() => changeFilter('all')}
-          >
-            All films
-          </button>
-          <button
-            type="button"
-            className={styles.segment}
-            aria-pressed={filter === 'unsorted'}
-            onClick={() => changeFilter('unsorted')}
-          >
-            Unsorted
-            {titles && <span className={styles.segmentCount}>{unsortedCount}</span>}
-          </button>
-        </div>
+      <header className={styles.header}>
+        <h1 id="view-title" className={styles.title}>
+          {searching ? 'Search' : 'All'}
+        </h1>
+        <p className={styles.meta}>{meta}</p>
+        {!searching && (
+          <div className={styles.segmented} role="group" aria-label="Show">
+            <button
+              type="button"
+              className={styles.segment}
+              aria-pressed={filter === 'all'}
+              onClick={() => changeFilter('all')}
+            >
+              All films
+            </button>
+            <button
+              type="button"
+              className={styles.segment}
+              aria-pressed={filter === 'unsorted'}
+              onClick={() => changeFilter('unsorted')}
+            >
+              Unsorted
+              {titles && <span className={styles.segmentCount}>{unsortedCount}</span>}
+            </button>
+          </div>
+        )}
       </header>
 
       {error && (
@@ -161,7 +175,11 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
         <p className={styles.status}>Your library is empty.</p>
       )}
       {titles && titles.length > 0 && visible && visible.length === 0 && (
-        <p className={styles.status}>Every film is in at least one collection.</p>
+        <p className={styles.status}>
+          {searching
+            ? 'No films in your library match this search.'
+            : 'Every film is in at least one collection.'}
+        </p>
       )}
 
       {visible && visible.length > 0 && (

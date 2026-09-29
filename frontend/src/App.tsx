@@ -3,6 +3,7 @@ import { api, ApiError, tokenStore } from './api/client';
 import type { Collection } from './api/types';
 import CollectionView from './components/CollectionView';
 import LibraryView from './components/LibraryView';
+import SearchBar from './components/SearchBar';
 import Sidebar, { type View } from './components/Sidebar';
 import TokenScreen from './components/TokenScreen';
 import styles from './App.module.css';
@@ -13,6 +14,7 @@ export default function App() {
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [view, setView] = useState<View>({ kind: 'all' });
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const signOut = useCallback(() => {
     tokenStore.clear();
@@ -20,6 +22,7 @@ export default function App() {
     setCollections([]);
     setLibraryCount(null);
     setView({ kind: 'all' });
+    setQuery('');
   }, []);
 
   /** Reloads the collections and library count shown in the sidebar. */
@@ -82,6 +85,13 @@ export default function App() {
 
   const selected =
     view.kind === 'collection' ? collections.find((c) => c.id === view.id) : undefined;
+  const searching = query.trim() !== '';
+
+  /** Choosing a page in the sidebar ends the search. */
+  function selectView(next: View) {
+    setQuery('');
+    setView(next);
+  }
 
   return (
     <div className={styles.layout}>
@@ -89,21 +99,33 @@ export default function App() {
         collections={collections}
         libraryCount={libraryCount}
         view={view}
-        onSelect={setView}
+        onSelect={selectView}
         onCreateCollection={createCollection}
         onReorderCollections={reorderCollections}
         onSignOut={signOut}
       />
       <main className={styles.main}>
+        <div className={styles.topBar}>
+          <SearchBar value={query} onChange={setQuery} />
+        </div>
         {error && <p role="alert">{error}</p>}
-        {view.kind === 'all' && (
+        {searching && (
+          <LibraryView
+            key="search"
+            collections={collections}
+            query={query}
+            onChanged={loadSidebar}
+            onUnauthorized={signOut}
+          />
+        )}
+        {!searching && view.kind === 'all' && (
           <LibraryView
             collections={collections}
             onChanged={loadSidebar}
             onUnauthorized={signOut}
           />
         )}
-        {selected && (
+        {!searching && selected && (
           <CollectionView
             key={selected.id}
             collection={selected}
