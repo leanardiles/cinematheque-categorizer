@@ -1,4 +1,4 @@
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -213,22 +213,40 @@ def public_base(request: Request) -> str:
 
 
 def not_cached(content: dict) -> JSONResponse:
-    # Source lists change as soon as a film is filed, so never reuse an old one
-    return JSONResponse(content, headers={"Cache-Control": "no-cache"})
+    # Source lists change as soon as a film is filed, so never reuse an old
+    # one; and they differ between Stremio Web and the apps (see action_links)
+    return JSONResponse(content, headers={"Cache-Control": "no-cache", "Vary": "Origin"})
 
 
-def action_links(base: str, token: str, action: str, collection_id: int, title: Title) -> dict:
-    """Link fields for one action, per Stremio app.
+def from_stremio_web(request: Request) -> bool:
+    """True when the request comes from Stremio Web in a browser.
 
-    Web and desktop read externalUrl: a web.strem.io address stays in the
-    browser (a stremio:// link would hand over to the desktop app). The TV
-    apps read their own fields and open stremio:// links inside the app.
+    Browsers send the page's origin with cross-site requests; the TV and
+    phone apps don't send one.
+    """
+    origin = request.headers.get("origin") or request.headers.get("referer") or ""
+    host = urlparse(origin).hostname or ""
+    return host.endswith(("strem.io", "stremio.com"))
+
+
+def action_links(
+    base: str, token: str, action: str, collection_id: int, title: Title, web: bool
+) -> dict:
+    """Link fields for one action.
+
+    The Android TV app opens externalUrl too (it ignored androidTvUrl in
+    testing), so one link can't serve every app. Stremio Web gets a
+    web.strem.io address, which stays in the browser; a stremio:// link
+    there would hand over to the desktop app. The other apps get stremio://,
+    which they open inside the app.
     """
     addon_url = f"{base}/{token}/do/{action}/{collection_id}/{title.imdb_id}/manifest.json"
     path = f"/discover/{quote(addon_url, safe='')}/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
+    if web:
+        return {"externalUrl": f"{WEB_APP}/#{path}"}
     app_link = f"stremio://{path}"
     return {
-        "externalUrl": f"{WEB_APP}/#{path}",
+        "externalUrl": app_link,
         "androidTvUrl": app_link,
         "tizenUrl": app_link,
         "webosUrl": app_link,
@@ -339,6 +357,13 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
     ).all()
 
     base = public_base(request)
+    web = from_stremio_web(request)
+    # Which app asked, to check the web or app choice in the Vercel logs
+    print(
+        f"STREAMS web={web} origin={request.headers.get('origin')} "
+        f"ua={request.headers.get('user-agent')}",
+        flush=True,
+    )
     result = []
     for collection in collections:
         if collection.id in in_collections:
@@ -349,7 +374,7 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
             {
                 "name": STREAM_NAME,
                 "description": text,
-                **action_links(base, token, action, collection.id, title),
+                **action_links(base, token, action, collection.id, title, web),
             }
         )
 
