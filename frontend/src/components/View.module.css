@@ -168,3 +168,10 @@
   text-align: center;
   color: var(--color-accent);
 }
+
+/* Row above the poster strip: sort control on the right */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -18px; /* sits close to the strip, inside the view's 32px gap */
+}

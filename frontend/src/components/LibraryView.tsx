@@ -6,6 +6,14 @@ import ConfirmDialog from './ConfirmDialog';
 import FilmStrip from './FilmStrip';
 import PosterCard from './PosterCard';
 import { matchesQuery } from '../lib/search';
+import {
+  LIBRARY_SORT_OPTIONS,
+  loadSortKey,
+  saveSortKey,
+  sortTitles,
+  type SortKey,
+} from '../lib/sort';
+import SortSelect from './SortSelect';
 import styles from './View.module.css';
 
 interface Props {
@@ -17,6 +25,8 @@ interface Props {
 }
 
 type Filter = 'all' | 'unsorted';
+
+const SORT_STORAGE_KEY = 'cinematheque.sort';
 
 /** Films synced from Stremio are removed there, not here (see ROADMAP, Milestone 5). */
 function canDelete(title: Title): boolean {
@@ -33,6 +43,9 @@ export default function LibraryView({
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Title | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sortKey, setSortKey] = useState<SortKey>(() =>
+    loadSortKey(SORT_STORAGE_KEY, LIBRARY_SORT_OPTIONS),
+  );
   // Films filed while viewing Unsorted stay visible until the filter changes,
   // so a poster doesn't vanish while its menu is still open
   const [justFiled, setJustFiled] = useState<Set<number>>(new Set());
@@ -53,6 +66,11 @@ export default function LibraryView({
       cancelled = true;
     };
   }, [onUnauthorized]);
+
+  function changeSort(next: SortKey) {
+    setSortKey(next);
+    saveSortKey(SORT_STORAGE_KEY, next);
+  }
 
   function changeFilter(next: Filter) {
     setFilter(next);
@@ -119,13 +137,15 @@ export default function LibraryView({
 
   const unsortedCount = titles?.filter((t) => t.collection_ids.length === 0).length ?? 0;
   const searching = query.trim() !== '';
-  const visible = !titles
+  const filtered = !titles
     ? titles
     : searching
       ? titles.filter((t) => matchesQuery(t, query))
       : filter === 'unsorted'
         ? titles.filter((t) => t.collection_ids.length === 0 || justFiled.has(t.id))
         : titles;
+
+  const visible = filtered ? sortTitles(filtered, sortKey) : filtered;
 
   const meta = !titles || !visible
     ? ' '
@@ -180,6 +200,12 @@ export default function LibraryView({
             ? 'No films in your library match this search.'
             : 'Every film is in at least one collection.'}
         </p>
+      )}
+
+      {visible && visible.length > 0 && (
+        <div className={styles.toolbar}>
+          <SortSelect value={sortKey} options={LIBRARY_SORT_OPTIONS} onChange={changeSort} />
+        </div>
       )}
 
       {visible && visible.length > 0 && (

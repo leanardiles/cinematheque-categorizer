@@ -4,7 +4,18 @@ import type { Collection, Title } from '../api/types';
 import ConfirmDialog from './ConfirmDialog';
 import FilmStrip from './FilmStrip';
 import PosterCard from './PosterCard';
+import SortSelect from './SortSelect';
+import {
+  COLLECTION_SORT_OPTIONS,
+  loadSortKey,
+  saveSortKey,
+  sortTitles,
+  type SortKey,
+} from '../lib/sort';
 import styles from './View.module.css';
+
+// One remembered choice for all collections, separate from All's
+const SORT_STORAGE_KEY = 'cinematheque.collectionSort';
 
 interface Props {
   collection: Collection;
@@ -27,6 +38,9 @@ export default function CollectionView({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>(() =>
+    loadSortKey(SORT_STORAGE_KEY, COLLECTION_SORT_OPTIONS),
+  );
 
   useEffect(() => {
     // Ignore responses that arrive after switching to another collection
@@ -101,7 +115,13 @@ export default function CollectionView({
     }
   }
 
+  function changeSort(next: SortKey) {
+    setSortKey(next);
+    saveSortKey(SORT_STORAGE_KEY, next);
+  }
+
   const count = titles?.length ?? collection.title_count;
+  const visible = titles ? sortTitles(titles, sortKey) : titles;
   const filmsLeft =
     count === 0
       ? 'It has no films.'
@@ -178,9 +198,15 @@ export default function CollectionView({
         <p className={styles.status}>No films in this collection yet.</p>
       )}
 
-      {titles && titles.length > 0 && (
+      {visible && visible.length > 0 && (
+        <div className={styles.toolbar}>
+          <SortSelect value={sortKey} options={COLLECTION_SORT_OPTIONS} onChange={changeSort} />
+        </div>
+      )}
+
+      {visible && visible.length > 0 && (
         <FilmStrip>
-          {titles.map((title) => (
+          {visible.map((title) => (
             <li key={title.id}>
               <PosterCard
                 title={title}

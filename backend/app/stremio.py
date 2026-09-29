@@ -22,6 +22,7 @@ class LibraryEntry:
     type: str  # "movie" or "series"
     name: str
     poster: str | None
+    added: datetime | None  # when it was saved to the Stremio library
     modified: datetime | None
 
 
@@ -61,6 +62,7 @@ def fetch_library() -> list[LibraryEntry]:
             type=item["type"],
             name=item.get("name") or imdb_id,
             poster=item.get("poster") or None,
+            added=_parse_time(item.get("_ctime")),
             modified=_parse_time(item.get("_mtime")),
         )
     return list(entries.values())

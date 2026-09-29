@@ -25,6 +25,8 @@ class SyncPlan:
     new: list[LibraryEntry] = field(default_factory=list)
     link: list[tuple[Title, LibraryEntry]] = field(default_factory=list)
     remove: list[Title] = field(default_factory=list)
+    # Already synced and still in Stremio; only used to fill in missing dates
+    existing: list[tuple[Title, LibraryEntry]] = field(default_factory=list)
 
     @property
     def is_empty(self) -> bool:
@@ -52,6 +54,8 @@ def plan(db: Session, user: User, entries: list[LibraryEntry]) -> SyncPlan:
             result.new.append(entry)
         elif title.id not in synced_ids:
             result.link.append((title, entry))
+        else:
+            result.existing.append((title, entry))
 
     result.remove = [t for t in titles if t.id in synced_ids and t.imdb_id not in in_stremio]
     return result
@@ -95,6 +99,7 @@ def _new_title(user: User, entry: LibraryEntry) -> Title:
             tmdb_id=found.tmdb_id,
             year=found.year,
             poster=found.poster or entry.poster or _metahub_poster(entry.imdb_id),
+            added_at=entry.added or datetime.now(timezone.utc),
         )
     else:
         title = Title(
@@ -104,6 +109,7 @@ def _new_title(user: User, entry: LibraryEntry) -> Title:
             name=entry.name,
             english_name=entry.name,
             poster=entry.poster or _metahub_poster(entry.imdb_id),
+            added_at=entry.added or datetime.now(timezone.utc),
         )
     title.sources.append(TitleSource(source=SOURCE))
     return title
@@ -119,9 +125,16 @@ def apply(db: Session, user: User, result: SyncPlan, limit: int | None = 50) -> 
         report.removed += 1
 
     # Already here from another source: mark as also coming from Stremio
-    for title, _ in result.link:
+    for title, entry in result.link:
         title.sources.append(TitleSource(source=SOURCE))
+        if title.added_at is None:
+            title.added_at = entry.added or title.created_at
         report.linked += 1
+
+    # Films synced before dates were stored get Stremio's date once
+    for title, entry in result.existing:
+        if title.added_at is None and entry.added is not None:
+            title.added_at = entry.added
     db.commit()
 
     # New films, committed one by one so a timeout never loses finished work

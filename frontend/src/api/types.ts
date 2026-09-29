@@ -20,6 +20,8 @@ export interface Title {
   poster: string | null;
   collection_ids: number[];
   sources: string[];
+  /** ISO date: when the film was saved to the library */
+  added_at: string;
 }
 
 export interface SearchResult {

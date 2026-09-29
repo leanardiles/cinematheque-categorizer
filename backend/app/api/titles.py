@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -60,6 +61,7 @@ def to_out(title: Title, collection_ids: list[int], sources: list[str]) -> Title
         poster=title.poster,
         collection_ids=sorted(collection_ids),
         sources=sorted(sources),
+        added_at=title.added_at or title.created_at,
     )
 
 
@@ -188,6 +190,7 @@ def add_title(
             tmdb_id=found.tmdb_id if is_tmdb else None,
             year=found.year,
             poster=found.poster or metahub_poster(found.imdb_id),
+            added_at=datetime.now(timezone.utc),
         )
         title.sources.append(TitleSource(source="manual"))
         db.add(title)

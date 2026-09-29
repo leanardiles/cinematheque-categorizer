@@ -46,6 +46,9 @@ class Title(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # When the film was saved to the library: Stremio's date for synced films,
+    # the moment of adding for manual ones. Falls back to created_at when empty.
+    added_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     sources: Mapped[list["TitleSource"]] = relationship(
         back_populates="title", cascade="all, delete-orphan"

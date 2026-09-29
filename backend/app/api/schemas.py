@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -36,6 +37,7 @@ class TitleOut(BaseModel):
     poster: str | None
     collection_ids: list[int]
     sources: list[str]
+    added_at: datetime
 
 
 class TitleCreate(BaseModel):
