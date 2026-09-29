@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, tokenStore } from './api/client';
 import type { Collection } from './api/types';
+import CollectionView from './components/CollectionView';
 import Sidebar from './components/Sidebar';
 import TokenScreen from './components/TokenScreen';
 import styles from './App.module.css';
@@ -18,19 +19,24 @@ export default function App() {
     setSelectedId(null);
   }, []);
 
-  useEffect(() => {
-    if (!authenticated) return;
+  const loadCollections = useCallback(() => {
     api
       .listCollections()
       .then((data) => {
         setCollections(data);
-        setSelectedId((current) => current ?? data[0]?.id ?? null);
+        setSelectedId((current) =>
+          current !== null && data.some((c) => c.id === current) ? current : data[0]?.id ?? null,
+        );
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) signOut();
         else setError('Could not load collections.');
       });
-  }, [authenticated, signOut]);
+  }, [signOut]);
+
+  useEffect(() => {
+    if (authenticated) loadCollections();
+  }, [authenticated, loadCollections]);
 
   if (!authenticated) {
     return <TokenScreen onAuthenticated={() => setAuthenticated(true)} />;
@@ -48,13 +54,15 @@ export default function App() {
       />
       <main className={styles.main}>
         {error && <p role="alert">{error}</p>}
-        {selected && (
-          <header>
-            <h1 className={styles.title}>{selected.name}</h1>
-            <p className={styles.meta}>
-              {selected.title_count} {selected.title_count === 1 ? 'film' : 'films'}
-            </p>
-          </header>
+        {selected ? (
+          <CollectionView
+            key={selected.id}
+            collection={selected}
+            onChanged={loadCollections}
+            onUnauthorized={signOut}
+          />
+        ) : (
+          collections.length === 0 && !error && <p>No collections yet.</p>
         )}
       </main>
     </div>

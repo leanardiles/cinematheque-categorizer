@@ -106,9 +106,9 @@ def lookup(imdb_id: str) -> TmdbTitle | None:
         return None
     data = response.json()
     if data.get("movie_results"):
-        return _from_movie(data["movie_results"][0], imdb_id)
+        return with_original_poster(_from_movie(data["movie_results"][0], imdb_id))
     if data.get("tv_results"):
-        return _from_tv(data["tv_results"][0], imdb_id)
+        return with_original_poster(_from_tv(data["tv_results"][0], imdb_id))
     return None
 
 
@@ -143,4 +143,30 @@ def resolve(tmdb_id: int, type_: str) -> TmdbTitle | None:
     imdb_id = data.get("imdb_id") or (data.get("external_ids") or {}).get("imdb_id")
     if not imdb_id:
         return None  # Stremio needs an IMDb ID, so titles without one can't be added
-    return _from_movie(data, imdb_id) if type_ == "movie" else _from_tv(data, imdb_id)
+    title = _from_movie(data, imdb_id) if type_ == "movie" else _from_tv(data, imdb_id)
+    return with_original_poster(title)
+
+
+def original_poster(tmdb_id: int, type_: str, language: str | None) -> str | None:
+    """The best-rated poster in the film's original language, or None if there isn't one."""
+    if not language or type_ not in TYPES:
+        return None
+    path = f"/movie/{tmdb_id}/images" if type_ == "movie" else f"/tv/{tmdb_id}/images"
+    with _client() as client:
+        response = client.get(path, params={"include_image_language": language})
+    if response.status_code != 200:
+        return None
+    posters = [p for p in response.json().get("posters", []) if p.get("iso_639_1") == language]
+    if not posters:
+        return None
+    best = max(posters, key=lambda p: (p.get("vote_average", 0), p.get("vote_count", 0)))
+    return _poster(best.get("file_path"))
+
+
+def with_original_poster(title: TmdbTitle) -> TmdbTitle:
+    """Swap in the original-language poster when the display name is the original title."""
+    if is_latin(title.original_title):
+        title.poster = (
+            original_poster(title.tmdb_id, title.type, title.original_language) or title.poster
+        )
+    return title    

@@ -1,0 +1,49 @@
+.dialog {
+  width: min(420px, calc(100% - 32px));
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: rgba(11, 12, 17, 0.7);
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.message {
+  margin: 12px 0 24px;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel,
+.confirm {
+  height: var(--touch-target);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  font-weight: 500;
+}
+
+.cancel {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+}
+
+.confirm {
+  border: 0;
+  background: var(--color-danger);
+  color: var(--color-text);
+  font-weight: 600;
+}
