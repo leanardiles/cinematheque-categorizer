@@ -108,6 +108,10 @@ export default function App() {
             key={selected.id}
             collection={selected}
             onChanged={loadSidebar}
+            onDeleted={() => {
+              setView({ kind: 'all' });
+              loadSidebar();
+            }}
             onUnauthorized={signOut}
           />
         )}

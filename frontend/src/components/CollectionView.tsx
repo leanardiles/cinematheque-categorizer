@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Collection, Title } from '../api/types';
 import ConfirmDialog from './ConfirmDialog';
@@ -9,13 +9,24 @@ import styles from './View.module.css';
 interface Props {
   collection: Collection;
   onChanged: () => void;
+  onDeleted: () => void;
   onUnauthorized: () => void;
 }
 
-export default function CollectionView({ collection, onChanged, onUnauthorized }: Props) {
+export default function CollectionView({
+  collection,
+  onChanged,
+  onDeleted,
+  onUnauthorized,
+}: Props) {
   const [titles, setTitles] = useState<Title[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<Title | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState(collection.name);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     // Ignore responses that arrive after switching to another collection
@@ -51,18 +62,110 @@ export default function CollectionView({ collection, onChanged, onUnauthorized }
     }
   }
 
+  function startRename() {
+    setNewName(collection.name);
+    setRenameError(null);
+    setRenaming(true);
+  }
+
+  async function handleRename(event: FormEvent) {
+    event.preventDefault();
+    const name = newName.trim();
+    if (!name || name === collection.name) {
+      setRenaming(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.updateCollection(collection.id, { name });
+      setRenaming(false);
+      onChanged();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) onUnauthorized();
+      else if (err instanceof ApiError && err.status === 409)
+        setRenameError('A collection with this name already exists.');
+      else setRenameError('Could not rename the collection.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    setError(null);
+    try {
+      await api.deleteCollection(collection.id);
+      onDeleted();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) onUnauthorized();
+      else setError('Could not delete the collection.');
+    }
+  }
+
   const count = titles?.length ?? collection.title_count;
+  const filmsLeft =
+    count === 0
+      ? 'It has no films.'
+      : `The ${count === 1 ? 'film' : `${count} films`} in it stay in All and in any other collections.`;
 
   return (
     <section className={styles.view} aria-labelledby="view-title">
-      <header className={styles.header}>
-        <h1 id="view-title" className={styles.title}>
-          {collection.name}
-        </h1>
-        <p className={styles.meta}>
-          {count} {count === 1 ? 'film' : 'films'} · shown in Stremio as{' '}
-          <span className={styles.accent}>{collection.name} Cinematheque</span>
-        </p>
+      <header className={styles.headerRow}>
+        <div className={styles.header}>
+          {renaming ? (
+            <form className={styles.renameForm} onSubmit={handleRename}>
+              <label className={styles.srOnly} htmlFor="rename-collection">
+                Collection name
+              </label>
+              <input
+                id="rename-collection"
+                className={styles.renameInput}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setRenaming(false);
+                }}
+                maxLength={100}
+                autoFocus
+              />
+              <div className={styles.actions}>
+                <button type="button" className={styles.secondary} onClick={() => setRenaming(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primary}
+                  disabled={saving || !newName.trim()}
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+              {renameError && (
+                <p className={styles.error} role="alert">
+                  {renameError}
+                </p>
+              )}
+            </form>
+          ) : (
+            <h1 id="view-title" className={styles.title}>
+              {collection.name}
+            </h1>
+          )}
+          <p className={styles.meta}>
+            {count} {count === 1 ? 'film' : 'films'} · shown in Stremio as{' '}
+            <span className={styles.accent}>{collection.name} Cinematheque</span>
+          </p>
+        </div>
+
+        {!renaming && (
+          <div className={styles.actions}>
+            <button type="button" className={styles.secondary} onClick={startRename}>
+              Rename
+            </button>
+            <button type="button" className={styles.danger} onClick={() => setConfirmDelete(true)}>
+              Delete
+            </button>
+          </div>
+        )}
       </header>
 
       {error && (
@@ -103,6 +206,18 @@ export default function CollectionView({ collection, onChanged, onUnauthorized }
           setPendingRemoval(null);
         }}
         onCancel={() => setPendingRemoval(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete collection?"
+        message={`${collection.name} will be deleted, and its row will disappear from Stremio. ${filmsLeft}`}
+        confirmLabel="Delete collection"
+        onConfirm={() => {
+          setConfirmDelete(false);
+          handleDelete();
+        }}
+        onCancel={() => setConfirmDelete(false)}
       />
     </section>
   );

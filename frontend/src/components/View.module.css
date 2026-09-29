@@ -35,3 +35,91 @@
   margin: 0;
   color: var(--color-danger);
 }
+/* Header with actions on the right */
+.headerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.headerRow .header {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.primary,
+.secondary,
+.danger {
+  height: var(--touch-target);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.primary {
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+}
+
+.danger {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.danger:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* Rename form: the input takes the title's place and size */
+.renameForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.renameInput {
+  flex-grow: 1;
+  min-width: 240px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.renameForm .error {
+  flex-basis: 100%;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
