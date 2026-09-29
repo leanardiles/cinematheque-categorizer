@@ -1,0 +1,19 @@
+name: Sync Stremio library
+
+on:
+  schedule:
+    - cron: "*/30 * * * *" # every 30 minutes (UTC)
+  workflow_dispatch: # also allows running it by hand from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the sync endpoint
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          curl -sS --fail-with-body -X POST \
+            -H "Authorization: Bearer $SYNC_SECRET" \
+            https://cinematheque-api.vercel.app/api/sync
