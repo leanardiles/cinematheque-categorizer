@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Collection, Title } from '../api/types';
+import CollectionMenu from './CollectionMenu';
 import ConfirmDialog from './ConfirmDialog';
 import FilmStrip from './FilmStrip';
 import PosterCard from './PosterCard';
@@ -12,6 +13,8 @@ interface Props {
   onUnauthorized: () => void;
 }
 
+type Filter = 'all' | 'unsorted';
+
 /** Films synced from Stremio are removed there, not here (see ROADMAP, Milestone 5). */
 function canDelete(title: Title): boolean {
   return !title.sources.includes('stremio');
@@ -21,6 +24,10 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
   const [titles, setTitles] = useState<Title[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Title | null>(null);
+  const [filter, setFilter] = useState<Filter>('all');
+  // Films filed while viewing Unsorted stay visible until the filter changes,
+  // so a poster doesn't vanish while its menu is still open
+  const [justFiled, setJustFiled] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +46,41 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
     };
   }, [onUnauthorized]);
 
+  function changeFilter(next: Filter) {
+    setFilter(next);
+    setJustFiled(new Set());
+  }
+
+  function setCollectionIds(titleId: number, collectionIds: number[]) {
+    setTitles((current) =>
+      current
+        ? current.map((t) => (t.id === titleId ? { ...t, collection_ids: collectionIds } : t))
+        : current,
+    );
+  }
+
+  async function toggleCollection(title: Title, collectionId: number) {
+    const before = title.collection_ids;
+    const inCollection = before.includes(collectionId);
+    const after = inCollection
+      ? before.filter((id) => id !== collectionId)
+      : [...before, collectionId];
+
+    // Update the screen right away, and undo it if the request fails
+    setCollectionIds(title.id, after);
+    if (filter === 'unsorted') setJustFiled((current) => new Set(current).add(title.id));
+    setError(null);
+    try {
+      if (inCollection) await api.removeFromCollection(collectionId, title.id);
+      else await api.addToCollection(collectionId, title.id);
+      onChanged();
+    } catch (err) {
+      setCollectionIds(title.id, before);
+      if (err instanceof ApiError && err.status === 401) onUnauthorized();
+      else setError(`Could not update the collections for ${title.name}.`);
+    }
+  }
+
   async function handleDelete(title: Title) {
     if (!titles) return;
     const previous = titles;
@@ -55,9 +97,10 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
   }
 
   function collectionNames(title: Title): string[] {
-    return title.collection_ids
-      .map((id) => collections.find((c) => c.id === id)?.name)
-      .filter((name): name is string => Boolean(name));
+    // In sidebar order, so the note reads the same way as the menu
+    return collections
+      .filter((c) => title.collection_ids.includes(c.id))
+      .map((c) => c.name);
   }
 
   function deleteMessage(title: Title): string {
@@ -66,17 +109,46 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
     return `${title.name} will be deleted from your library${also}.`;
   }
 
-  const count = titles?.length ?? 0;
+  const unsortedCount = titles?.filter((t) => t.collection_ids.length === 0).length ?? 0;
+  const visible =
+    titles && filter === 'unsorted'
+      ? titles.filter((t) => t.collection_ids.length === 0 || justFiled.has(t.id))
+      : titles;
+
+  const meta = !titles
+    ? ' '
+    : filter === 'all'
+      ? `${titles.length} ${titles.length === 1 ? 'film' : 'films'} in your library`
+      : `${unsortedCount} ${unsortedCount === 1 ? 'film' : 'films'} not in a collection yet`;
 
   return (
     <section className={styles.view} aria-labelledby="view-title">
-      <header className={styles.header}>
-        <h1 id="view-title" className={styles.title}>
-          All
-        </h1>
-        <p className={styles.meta}>
-          {titles ? `${count} ${count === 1 ? 'film' : 'films'} in your library` : ' '}
-        </p>
+      <header className={styles.headerRow}>
+        <div className={styles.header}>
+          <h1 id="view-title" className={styles.title}>
+            All
+          </h1>
+          <p className={styles.meta}>{meta}</p>
+        </div>
+        <div className={styles.segmented} role="group" aria-label="Show">
+          <button
+            type="button"
+            className={styles.segment}
+            aria-pressed={filter === 'all'}
+            onClick={() => changeFilter('all')}
+          >
+            All films
+          </button>
+          <button
+            type="button"
+            className={styles.segment}
+            aria-pressed={filter === 'unsorted'}
+            onClick={() => changeFilter('unsorted')}
+          >
+            Unsorted
+            {titles && <span className={styles.segmentCount}>{unsortedCount}</span>}
+          </button>
+        </div>
       </header>
 
       {error && (
@@ -88,18 +160,33 @@ export default function LibraryView({ collections, onChanged, onUnauthorized }: 
       {titles && titles.length === 0 && (
         <p className={styles.status}>Your library is empty.</p>
       )}
+      {titles && titles.length > 0 && visible && visible.length === 0 && (
+        <p className={styles.status}>Every film is in at least one collection.</p>
+      )}
 
-      {titles && titles.length > 0 && (
+      {visible && visible.length > 0 && (
         <FilmStrip>
-          {titles.map((title) => (
-            <li key={title.id}>
-              <PosterCard
-                title={title}
-                removeLabel={`Delete ${title.name} from your library`}
-                onRemove={canDelete(title) ? () => setPendingDelete(title) : undefined}
-              />
-            </li>
-          ))}
+          {visible.map((title) => {
+            const names = collectionNames(title);
+            return (
+              <li key={title.id}>
+                <PosterCard
+                  title={title}
+                  removeLabel={`Delete ${title.name} from your library`}
+                  onRemove={canDelete(title) ? () => setPendingDelete(title) : undefined}
+                  note={names.length > 0 ? names.join(' · ') : undefined}
+                  menu={
+                    <CollectionMenu
+                      titleName={title.name}
+                      collections={collections}
+                      selectedIds={title.collection_ids}
+                      onToggle={(collectionId) => toggleCollection(title, collectionId)}
+                    />
+                  }
+                />
+              </li>
+            );
+          })}
         </FilmStrip>
       )}
 

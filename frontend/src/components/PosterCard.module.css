@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -56,9 +57,31 @@
 }
 
 @media (hover: none) {
-  .remove {
+  .remove,
+  .menuSlot {
     opacity: 1;
   }
+}
+
+/* Collections menu, over the top left of the poster (outside the frame so its
+   dropdown isn't clipped). Visible on hover, keyboard focus, or while open. */
+.menuSlot {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.card:hover .menuSlot,
+.menuSlot:focus-within,
+.menuSlot:has([aria-expanded='true']) {
+  opacity: 1;
+}
+
+.card:has([aria-expanded='true']) {
+  z-index: 10;
 }
 
 .remove:hover {
@@ -74,4 +97,8 @@
 .details {
   font-size: 12px;
   color: var(--color-text-muted);
+}
+.note {
+  font-size: 12px;
+  color: var(--color-accent);
 }
