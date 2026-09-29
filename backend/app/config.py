@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     addon_token: str = Field(min_length=20)
     api_token: str = Field(min_length=20)
     sync_secret: str = Field(min_length=20)
+    stremio_auth_key: str = Field(min_length=10)
 
 
 settings = Settings()
