@@ -386,6 +386,16 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
         )
         result.append(
             {
+                "name": "Test 6",
+                "description": f"Web address version of Test 5: add to {first.name}",
+                "externalUrl": (
+                    f"https://web.strem.io/#/discover/{quote(action_manifest_url, safe='')}"
+                    f"/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
+                ),
+            }
+        )
+        result.append(
+            {
                 "name": "Test 2",
                 "description": f"Discover link ({first.name})",
                 **external_links(
