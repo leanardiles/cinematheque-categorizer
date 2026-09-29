@@ -16,6 +16,9 @@ PAGE_SIZE = 100  # Stremio's page size; fewer results means end of catalog
 CACHE_SECONDS = 10
 CATALOG_PREFIX = "collection-"
 ALL_CATALOG = "cinematheque-all"
+# EXPERIMENT (branch experiment/stremio-deep-links): search-only catalog that
+# receives stremio:///search deep links; hidden from Board because search is required
+ACTIONS_CATALOG = "cinematheque-actions"
 UNSORTED_CATALOG = "cinematheque-unsorted"
 
 
@@ -78,14 +81,28 @@ def manifest(token: str, db: Session = Depends(get_db)):
                     "type": type_,
                     "id": f"{CATALOG_PREFIX}{collection.id}",
                     "name": f"{collection.name} Cinematheque",
-                    "extra": [{"name": "skip", "isRequired": False}],
+                    "extra": [
+                        {"name": "skip", "isRequired": False},
+                        # EXPERIMENT: lets a discover deep link pass a value in
+                        {"name": "genre", "isRequired": False, "options": ["All"]},
+                    ],
                 }
             )
+
+    # EXPERIMENT: search-only catalog for the search deep link test
+    catalogs.append(
+        {
+            "type": "movie",
+            "id": ACTIONS_CATALOG,
+            "name": "Cinémathèque",
+            "extra": [{"name": "search", "isRequired": True}],
+        }
+    )
 
     return cached(
         {
             "id": "com.leanardiles.cinematheque",
-            "version": "0.4.0",
+            "version": "0.5.0",
             "name": "Cinematheque",
             "description": "My library, organized into collections.",
             "resources": [
@@ -124,10 +141,24 @@ def catalog_response(
     check_token(token)
     user = current_user(db)
 
+    params = parse_extra(extra)
     try:
-        skip = int(parse_extra(extra).get("skip", 0))
+        skip = int(params.get("skip", 0))
     except ValueError:
         return cached({"metas": []})
+
+    # EXPERIMENT: log deep link hits so we can see which ones reach the backend
+    if catalog_id == ACTIONS_CATALOG or "genre" in params:
+        print(f"DEEPLINK catalog={catalog_id} type={type} params={params}", flush=True)
+    if catalog_id == ACTIONS_CATALOG:
+        # Answer with the whole library so the search page shows something from us
+        titles = db.scalars(
+            select(Title)
+            .where(Title.user_id == user.id, Title.type == type)
+            .order_by(func.coalesce(Title.added_at, Title.created_at).desc())
+            .limit(20)
+        ).all()
+        return not_cached({"metas": [to_meta(title) for title in titles]})
 
     if catalog_id in (ALL_CATALOG, UNSORTED_CATALOG):
         # Most recently saved first, like the web app's default
@@ -246,6 +277,37 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
                 "url": f"{base}/{token}/act/{action}/{collection.id}/{imdb_id}.mp4",
             }
         )
+
+    # EXPERIMENT: three kinds of internal Stremio links, to see which ones the
+    # apps follow and which reach the backend (look for DEEPLINK in the logs)
+    manifest_url = f"{base}/{token}/manifest.json"
+    first = collections[0] if collections else None
+    if first is not None:
+        marker = f"cinematheque add {first.id} {imdb_id}"
+        result.append(
+            {
+                "name": "Test 1",
+                "description": f"Search link ({first.name})",
+                "externalUrl": f"stremio:///search?search={quote(marker)}",
+            }
+        )
+        result.append(
+            {
+                "name": "Test 2",
+                "description": f"Discover link ({first.name})",
+                "externalUrl": (
+                    f"stremio:///discover/{quote(manifest_url, safe='')}"
+                    f"/{title.type}/{CATALOG_PREFIX}{first.id}?genre=All"
+                ),
+            }
+        )
+    result.append(
+        {
+            "name": "Test 3",
+            "description": "Detail link (control)",
+            "externalUrl": f"stremio:///detail/{title.type}/{imdb_id}/{imdb_id}",
+        }
+    )
 
     # Opens the web app with this film searched (desktop and phone; TVs usually can't)
     result.append(
