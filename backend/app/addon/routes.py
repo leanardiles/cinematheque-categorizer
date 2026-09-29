@@ -19,6 +19,7 @@ ALL_CATALOG = "cinematheque-all"
 # EXPERIMENT (branch experiment/stremio-deep-links): search-only catalog that
 # receives stremio:///search deep links; hidden from Board because search is required
 ACTIONS_CATALOG = "cinematheque-actions"
+ACTIONS_GENRE = "Actions"
 UNSORTED_CATALOG = "cinematheque-unsorted"
 
 
@@ -89,22 +90,27 @@ def manifest(token: str, db: Session = Depends(get_db)):
                 }
             )
 
-    # EXPERIMENT: search-only catalogs that receive the deep link actions;
-    # required search keeps them off the Board
+    # EXPERIMENT: catalogs that receive the deep link actions. Discover only
+    # opens catalogs whose required extras all have options, so a required
+    # genre with one option makes it openable while keeping it off the Board
+    # and the search page; the action itself travels in the search extra
     for type in ("movie", "series"):
         catalogs.append(
             {
                 "type": type,
                 "id": ACTIONS_CATALOG,
                 "name": "Cinémathèque",
-                "extra": [{"name": "search", "isRequired": True}],
+                "extra": [
+                    {"name": "genre", "isRequired": True, "options": [ACTIONS_GENRE]},
+                    {"name": "search", "isRequired": False},
+                ],
             }
         )
 
     return cached(
         {
             "id": "com.leanardiles.cinematheque",
-            "version": "0.5.1",
+            "version": "0.5.2",
             "name": "Cinematheque",
             "description": "My library, organized into collections.",
             "resources": [
@@ -266,6 +272,39 @@ def not_cached(content: dict) -> JSONResponse:
     return JSONResponse(content, headers={"Cache-Control": "no-cache"})
 
 
+# EXPERIMENT: the action travels in the addon address itself, since the TV
+# app drops free-text extras from Discover links. Stremio asks this address
+# for the catalog, so the request carries the action whatever the app keeps.
+ACTION_PREFIX = "/{token}/do/{action}/{collection_id}/{imdb_id}"
+
+
+@router.get(ACTION_PREFIX + "/manifest.json")
+def action_manifest(token: str, action: str, collection_id: int, imdb_id: str, db: Session = Depends(get_db)):
+    print(f"DEEPLINK action-manifest {action} {collection_id} {imdb_id}", flush=True)
+    return manifest(token, db)
+
+
+@router.get(ACTION_PREFIX + "/catalog/{type}/{catalog_id}.json")
+@router.get(ACTION_PREFIX + "/catalog/{type}/{catalog_id}/{extra}.json")
+def action_catalog(
+    token: str,
+    action: str,
+    collection_id: int,
+    imdb_id: str,
+    type: str,
+    catalog_id: str,
+    extra: str | None = None,
+    db: Session = Depends(get_db),
+):
+    check_token(token)
+    print(
+        f"DEEPLINK action-catalog {action} {collection_id} {imdb_id} catalog={catalog_id} extra={extra}",
+        flush=True,
+    )
+    user = current_user(db)
+    return not_cached({"metas": run_action(db, user, f"{action} {collection_id} {imdb_id}")})
+
+
 @router.get("/{token}/stream/{type}/{video_id}.json")
 def streams(token: str, type: str, video_id: str, request: Request, db: Session = Depends(get_db)):
     check_token(token)
@@ -329,7 +368,19 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
                 "description": f"Discover action link: add to {first.name}",
                 **external_links(
                     f"stremio:///discover/{quote(manifest_url, safe='')}"
-                    f"/{title.type}/{ACTIONS_CATALOG}?search={quote(f'add {first.id} {imdb_id}')}"
+                    f"/{title.type}/{ACTIONS_CATALOG}"
+                    f"?genre={ACTIONS_GENRE}&search={quote(f'add {first.id} {imdb_id}')}"
+                ),
+            }
+        )
+        action_manifest_url = f"{base}/{token}/do/add/{first.id}/{imdb_id}/manifest.json"
+        result.append(
+            {
+                "name": "Test 5",
+                "description": f"Action in the addon address: add to {first.name}",
+                **external_links(
+                    f"stremio:///discover/{quote(action_manifest_url, safe='')}"
+                    f"/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
                 ),
             }
         )
