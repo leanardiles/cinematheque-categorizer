@@ -8,7 +8,7 @@ A personal Stremio addon and web app for organizing a movie and TV library into 
 
 Stremio's library is a flat list with no way to group titles. This project lets me create collections (for example French, Argentinian, LGBTQ+) and add films to them, similar to collections on an e-reader. A film can belong to several collections or to none. Each collection appears in Stremio as its own row on the home screen and in Discover, on web and TV, and playback still works through whatever stream addons are installed.
 
-**Live:** [cinematheque-ui.vercel.app](https://cinematheque-ui.vercel.app) (management app, private token required) · [cinematheque-api.vercel.app](https://cinematheque-api.vercel.app) (API)
+**Live:** [cinematheque-categorizer.vercel.app](https://cinematheque-categorizer.vercel.app) (management app, private token required) · [cinematheque-api.vercel.app](https://cinematheque-api.vercel.app) (API)
 
 ## Features
 

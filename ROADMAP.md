@@ -53,7 +53,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Token screen that checks the API token and stores it in the browser
 - [x] Typed API client using `VITE_API_URL`, sidebar listing collections
 - [x] `dev.sh` runs backend and frontend in one labeled window, tunnel optional
-- [x] Second Vercel project (`cinematheque-ui`, root directory `frontend`)
+- [x] Second Vercel project (`cinematheque-categorizer`, root directory `frontend`)
 
 ### Part C: UI features
 
@@ -62,10 +62,12 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] All view: every film, delete from the library with confirmation (lists the collections it leaves)
 - [x] New collection button next to the Collections heading
 - [x] Drag to reorder collections (dnd-kit, mouse, touch and keyboard)
-- [ ] Rename and delete collections (with confirmation)
-- [ ] Add films: search by title, pick a result, choose collections
+- [x] Rename and delete collections (with confirmation)
+- [ ] Add films to a collection: a + tile at the end of each collection opens a picker of library films
 - [ ] Drag to reorder films in a collection (dnd-kit)
 - [x] TMDB attribution in the UI footer
+
+**Source of truth:** for now, films enter the library only through the Stremio library sync (Milestone 5). The app organizes them; it doesn't add new films. Adding films from the app is a future enhancement (see Later).
 
 **How All and collections relate**
 
@@ -107,6 +109,8 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ## Later
 
+- [ ] Search bar at the top right of every screen, searching the library (All) to find and file films
+- [ ] Decide whether the app can add films itself, and how: TMDB search adding films that aren't in the Stremio library (two kinds of films, different delete rules), or adding them here and to the Stremio library at the same time (one source of truth, but writes through the unofficial Stremio API)
 - [ ] Letterboxd watchlist import (via the Letterboxd addon catalog, with CSV export as fallback)
 - [ ] TMDB enrichment: directors, cast, countries, genres, year
 - [ ] Filter catalogs by director, country, year and actor, with `search` syntax such as `director:almodovar year:1990-2005`
