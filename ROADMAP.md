@@ -46,22 +46,32 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] TMDB search endpoint marking titles already in the library
 - [x] Deployed and tested on Vercel
 
-### Part B: Frontend scaffold and deployment
+### Part B: Frontend scaffold and deployment (done)
 
 - [x] Decisions: TypeScript, CSS Modules with design tokens, visual direction C (Salle de projection: dark, cream text, gold accent, Playfair Display SC and Work Sans, film strip framing)
 - [x] React + Vite + TypeScript app in `frontend/`, design tokens and fonts
 - [x] Token screen that checks the API token and stores it in the browser
 - [x] Typed API client using `VITE_API_URL`, sidebar listing collections
 - [x] `dev.sh` runs backend and frontend in one labeled window, tunnel optional
-- [ ] Second Vercel project (`cinematheque-ui`, root directory `frontend`)
+- [x] Second Vercel project (`cinematheque-ui`, root directory `frontend`)
 
 ### Part C: UI features
 
-- [ ] Collections sidebar: create, rename, delete, drag to reorder
-- [ ] Collection view: poster grid, remove films, drag to reorder (dnd-kit)
+- [x] Collection view: film strip poster grid, original-language posters, remove films with confirmation
+- [x] Sidebar: All at the top (every film in the library), then collections
+- [x] All view: every film, delete from the library with confirmation (lists the collections it leaves)
+- [x] New collection button next to the Collections heading
+- [x] Drag to reorder collections (dnd-kit, mouse, touch and keyboard)
+- [ ] Rename and delete collections (with confirmation)
 - [ ] Add films: search by title, pick a result, choose collections
-- [ ] Library view: all films with their collections, unsorted filter, switch between original and English title
-- [ ] TMDB attribution in the UI footer
+- [ ] Drag to reorder films in a collection (dnd-kit)
+- [x] TMDB attribution in the UI footer
+
+**How All and collections relate**
+
+- All shows every film in the library, whether it is in a collection or not.
+- Removing a film from a collection keeps it in All and in its other collections.
+- Deleting a film from All deletes it from the library and from every collection it is in.
 
 ## Milestone 4: Deployment (done)
 
@@ -71,21 +81,29 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Test on Stremio Web and TV
 - [ ] Check the Vercel function region is close to the Supabase region
 
-## Milestone 5: Add to collection from inside Stremio
+## Milestone 5: Stremio library sync
 
-- [ ] Stream resource for `tt` IDs returning one entry per collection (Add to French, In LGBTQ (remove), and so on)
+- [ ] Research the unofficial Stremio library API; document findings in `docs/reference/stremio-library-api.md`
+- [ ] Sync endpoint protected by `SYNC_SECRET`; upsert saved titles with source `stremio`
+- [ ] Films removed from the Stremio library are deleted here too, including their collection entries (same as deleting from All)
+- [ ] Deleting from All: allowed for manually added films; for films synced from Stremio, show a message to remove them from the Stremio library instead (see open question below)
+- [ ] GitHub Actions scheduled workflow calling the sync endpoint
+- [ ] Stremio catalogs: Cinematheque All (always first) and Unsorted
+- [ ] Library view in the UI: All and Unsorted, switch between original and English title
+
+**Open question:** a film deleted from All but still saved in the Stremio library would come back on the next sync. Leaning towards the simplest option for now: the Stremio library is the source of truth for synced films, so the UI doesn't offer deleting them from All and instead says to remove the film from the Stremio library, and the next sync removes it here. Films added manually (not from Stremio) can still be deleted from All. Other options for later: remember deleted films and skip them during sync, or also remove them from the Stremio library.
+
+## Milestone 6: Add to collection from inside Stremio
+
+- [ ] Stream resource for `tt` IDs returning one entry per collection (Add to French, In LGBTQ+ (remove), and so on)
 - [ ] Action endpoint that adds or removes the film and returns a short confirmation clip, so it works on TV
 - [ ] Optional entry opening the web UI with the film selected (desktop and phone)
 - [ ] Test on the Stremio TV app
 
-## Milestone 6: Stremio library sync and Unsorted
+## Milestone 7: Showcase
 
-- [ ] Research the unofficial Stremio library API; document findings in `docs/reference/stremio-library-api.md`
-- [ ] Sync endpoint protected by `SYNC_SECRET`; upsert saved titles with source `stremio`
-- [ ] Mark titles removed from the Stremio library instead of deleting them
-- [ ] Unsorted catalog: library titles not in any collection
-- [ ] Cinematheque All catalog: every library title, in collections or not
-- [ ] GitHub Actions scheduled workflow calling the sync endpoint
+- [ ] Demo mode for visitors: an Explore demo button on the token screen that runs the UI on sample data, read-only, no token needed
+- [ ] Screenshots or a short GIF of the app and the Stremio rows in the README
 
 ## Later
 
