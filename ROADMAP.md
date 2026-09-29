@@ -106,7 +106,7 @@ Stremio lets addons add sources to a film's page, not buttons, so each collectio
 
 - [x] Stream resource for `tt` IDs (series episodes map to the series): one entry per collection, ＋ Add to French or ✓ In LGBTQ+ (select to remove), for films in the library
 - [x] Action address with explicit add or remove (safe to request twice), answering with a ✓ Added to or ✓ Removed from card
-- [x] Per app links: a web.strem.io address for Stremio Web (stays in the browser), `stremio://` links for the TV apps
+- [x] Per app links, chosen from the request's origin: a web.strem.io address for Stremio Web (stays in the browser), `stremio://` links for the other apps (the Android TV app opens externalUrl, not androidTvUrl)
 - [x] Entry opening the web app with the film searched (desktop and phone)
 - [x] Sync on the spot: a film saved in Stremio moments ago is brought in when its sources are opened, so the entries appear without waiting for the scheduled sync
 - [x] Tested on Stremio Web, the Stremio desktop app and the Android TV app (Sony)
