@@ -222,6 +222,11 @@ STREAM_NAME = "Cinémathèque"
 CLIPS = {"add": "added.mp4", "remove": "removed.mp4"}
 
 
+def external_links(url: str) -> dict:
+    """EXPERIMENT: TV apps ignore externalUrl and read their own field instead."""
+    return {"externalUrl": url, "androidTvUrl": url, "tizenUrl": url, "webosUrl": url}
+
+
 def public_base(request: Request) -> str:
     """The address Stremio used to reach us, e.g. https://cinematheque-api.vercel.app."""
     proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
@@ -288,14 +293,14 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
             {
                 "name": "Test 1",
                 "description": f"Search link ({first.name})",
-                "externalUrl": f"stremio:///search?search={quote(marker)}",
+                **external_links(f"stremio:///search?search={quote(marker)}"),
             }
         )
         result.append(
             {
                 "name": "Test 2",
                 "description": f"Discover link ({first.name})",
-                "externalUrl": (
+                **external_links(
                     f"stremio:///discover/{quote(manifest_url, safe='')}"
                     f"/{title.type}/{CATALOG_PREFIX}{first.id}?genre=All"
                 ),
@@ -305,7 +310,7 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
         {
             "name": "Test 3",
             "description": "Detail link (control)",
-            "externalUrl": f"stremio:///detail/{title.type}/{imdb_id}/{imdb_id}",
+            **external_links(f"stremio:///detail/{title.type}/{imdb_id}/{imdb_id}"),
         }
     )
 
@@ -314,7 +319,7 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
         {
             "name": STREAM_NAME,
             "description": "Open in the Cinémathèque app",
-            "externalUrl": f"{settings.ui_url}/?q={quote(title.name)}",
+            **external_links(f"{settings.ui_url}/?q={quote(title.name)}"),
         }
     )
     return not_cached({"streams": result})
