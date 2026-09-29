@@ -63,6 +63,9 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] New collection button next to the Collections heading
 - [x] Drag to reorder collections (dnd-kit, mouse, touch and keyboard)
 - [x] Rename and delete collections (with confirmation)
+- [x] File films from All: a collections menu on each poster (tick to add, untick to remove), collection names under each title, and an Unsorted filter
+- [x] Search bar at the top right of every screen: finds films across the library as you type (display, original and English titles, accents ignored), with the collections menu on each result
+- [x] Sort by last added (Stremio's save date), title or year in All, Unsorted, Search and collections; collections also offer their own order (the default, and the order Stremio shows). The choice is remembered per browser
 - [ ] Add films to a collection: a + tile at the end of each collection opens a picker of library films
 - [ ] Drag to reorder films in a collection (dnd-kit)
 - [x] TMDB attribution in the UI footer
@@ -109,7 +112,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ## Later
 
-- [ ] Search bar at the top right of every screen, searching the library (All) to find and file films
+- [ ] Drag a poster from All onto a collection in the sidebar to add it (dnd-kit, one shared drag context for posters and collection reordering; the menu stays as the accessible way)
 - [ ] Decide whether the app can add films itself, and how: TMDB search adding films that aren't in the Stremio library (two kinds of films, different delete rules), or adding them here and to the Stremio library at the same time (one source of truth, but writes through the unofficial Stremio API)
 - [ ] Letterboxd watchlist import (via the Letterboxd addon catalog, with CSV export as fallback)
 - [ ] TMDB enrichment: directors, cast, countries, genres, year
