@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     api_token: str = Field(min_length=20)
     sync_secret: str = Field(min_length=20)
     stremio_auth_key: str = Field(min_length=10)
+    # The web app, linked from inside Stremio (not a secret)
+    ui_url: str = "https://cinematheque-categorizer.vercel.app"
 
 
 settings = Settings()

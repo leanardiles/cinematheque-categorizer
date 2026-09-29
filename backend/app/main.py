@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.addon.routes import router as addon_router
 from app.api.routes import router as api_router
@@ -18,6 +22,15 @@ app.add_middleware(
 
 app.include_router(addon_router)
 app.include_router(api_router)
+
+# On Vercel, files in backend/public/ are served by the CDN (e.g. /clips/added.mp4).
+# Locally, serve the confirmation clips from FastAPI so the tunnel setup works too.
+if not os.environ.get("VERCEL"):
+    app.mount(
+        "/clips",
+        StaticFiles(directory=Path(__file__).resolve().parent.parent / "public" / "clips"),
+        name="clips",
+    )
 
 
 @app.get("/")

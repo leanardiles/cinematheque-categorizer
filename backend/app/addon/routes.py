@@ -1,7 +1,7 @@
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
@@ -85,10 +85,14 @@ def manifest(token: str, db: Session = Depends(get_db)):
     return cached(
         {
             "id": "com.leanardiles.cinematheque",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "name": "Cinematheque",
             "description": "My library, organized into collections.",
-            "resources": ["catalog"],
+            "resources": [
+                "catalog",
+                # Collection actions appear as sources on each film's page
+                {"name": "stream", "types": ["movie", "series"], "idPrefixes": ["tt"]},
+            ],
             "types": ["movie", "series"],
             "idPrefixes": ["tt"],
             "catalogs": catalogs,
@@ -171,3 +175,118 @@ def catalog_with_extra(
     token: str, type: str, catalog_id: str, extra: str, db: Session = Depends(get_db)
 ):
     return catalog_response(token, type, catalog_id, extra, db)
+
+
+# ---------------------------------------------------------------------------
+# Collection actions from inside Stremio (Milestone 6)
+#
+# Stremio lets addons add sources to a film's page, not buttons. So each
+# collection becomes a source: selecting it calls /act/..., which adds or
+# removes the film and redirects to a short confirmation clip. Because it is
+# ordinary playback, it works on every Stremio app, including TV.
+# The addon token in the path is what authorizes the change, like the manifest.
+# ---------------------------------------------------------------------------
+
+STREAM_NAME = "Cinémathèque"
+CLIPS = {"add": "added.mp4", "remove": "removed.mp4"}
+
+
+def public_base(request: Request) -> str:
+    """The address Stremio used to reach us, e.g. https://cinematheque-api.vercel.app."""
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host.split(',')[0].strip()}"
+
+
+def not_cached(content: dict) -> JSONResponse:
+    # Source lists change as soon as a film is filed, so never reuse an old one
+    return JSONResponse(content, headers={"Cache-Control": "no-cache"})
+
+
+@router.get("/{token}/stream/{type}/{video_id}.json")
+def streams(token: str, type: str, video_id: str, request: Request, db: Session = Depends(get_db)):
+    check_token(token)
+    user = current_user(db)
+
+    # Series episodes arrive as tt1234567:1:2; collections hold the series itself
+    imdb_id = video_id.split(":")[0]
+    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
+    if title is None:
+        return not_cached({"streams": []})  # not in the library: nothing to file
+
+    in_collections = set(
+        db.scalars(
+            select(CollectionTitle.collection_id).where(CollectionTitle.title_id == title.id)
+        ).all()
+    )
+    collections = db.scalars(
+        select(Collection)
+        .where(Collection.user_id == user.id)
+        .order_by(Collection.position, Collection.name)
+    ).all()
+
+    base = public_base(request)
+    result = []
+    for collection in collections:
+        if collection.id in in_collections:
+            action, text = "remove", f"✓ In {collection.name}\nSelect to remove"
+        else:
+            action, text = "add", f"＋ Add to {collection.name}"
+        result.append(
+            {
+                "name": STREAM_NAME,
+                "description": text,
+                "url": f"{base}/{token}/act/{action}/{collection.id}/{imdb_id}.mp4",
+            }
+        )
+
+    # Opens the web app with this film searched (desktop and phone; TVs usually can't)
+    result.append(
+        {
+            "name": STREAM_NAME,
+            "description": "Open in the Cinémathèque app",
+            "externalUrl": f"{settings.ui_url}/?q={quote(title.name)}",
+        }
+    )
+    return not_cached({"streams": result})
+
+
+@router.api_route("/{token}/act/{action}/{collection_id}/{imdb_id}.mp4", methods=["GET", "HEAD"])
+def act(
+    token: str,
+    action: str,
+    collection_id: int,
+    imdb_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Add or remove a film, then play the matching confirmation clip.
+
+    Explicit add/remove (never toggle), so a player requesting the address
+    more than once, as video players often do, can't undo the change.
+    """
+    from app.api.titles import add_to_collection  # shared with the web app's API
+
+    check_token(token)
+    if action not in CLIPS:
+        raise HTTPException(status_code=404)
+    user = current_user(db)
+
+    collection = db.get(Collection, collection_id)
+    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
+    if collection is None or collection.user_id != user.id or title is None:
+        raise HTTPException(status_code=404)
+
+    entry = db.get(CollectionTitle, (collection.id, title.id))
+    if action == "add" and entry is None:
+        add_to_collection(db, collection, title)
+        db.commit()
+    elif action == "remove" and entry is not None:
+        db.delete(entry)
+        db.commit()
+
+    return RedirectResponse(
+        f"{public_base(request)}/clips/{CLIPS[action]}",
+        status_code=302,
+        headers={"Cache-Control": "no-store"},
+    )

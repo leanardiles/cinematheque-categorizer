@@ -14,7 +14,8 @@ export default function App() {
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [view, setView] = useState<View>({ kind: 'all' });
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  // Opened from Stremio as /?q=<film name>: start with that search
+  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
 
   const signOut = useCallback(() => {
     tokenStore.clear();
