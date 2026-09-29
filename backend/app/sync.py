@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import stremio, tmdb
@@ -160,3 +161,30 @@ def run(db: Session, user: User, limit: int | None = 50) -> SyncReport:
     """Fetch the Stremio library, plan and apply. Used by the endpoint and the CLI."""
     entries = stremio.fetch_library()
     return apply(db, user, plan(db, user, entries), limit=limit)
+
+def sync_one(db: Session, user: User, imdb_id: str) -> Title | None:
+    """Bring in a single film right away, if it's saved in the Stremio library.
+
+    Used when Stremio asks for a film's sources before the scheduled sync has
+    picked it up. Returns the film, or None if it isn't in the Stremio library
+    (or Stremio can't be reached; the scheduled sync will catch up).
+    """
+    try:
+        entries = stremio.fetch_library()
+    except Exception:
+        return None
+    entry = next((e for e in entries if e.imdb_id == imdb_id), None)
+    if entry is None:
+        return None
+
+    title = _new_title(user, entry)
+    db.add(title)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Added by a sync running at the same moment; use that one
+        db.rollback()
+        title = db.scalar(
+            select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id)
+        )
+    return title

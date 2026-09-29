@@ -212,6 +212,13 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
     imdb_id = video_id.split(":")[0]
     title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
     if title is None:
+        # Saved in Stremio moments ago? Bring it in now instead of waiting for
+        # the scheduled sync (Stremio stays the source of truth: films that
+        # aren't saved there still get no entries)
+        from app.sync import sync_one
+
+        title = sync_one(db, user, imdb_id)
+    if title is None:
         return not_cached({"streams": []})  # not in the library: nothing to file
 
     in_collections = set(
