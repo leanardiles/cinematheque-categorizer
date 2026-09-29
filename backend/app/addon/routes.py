@@ -1,7 +1,7 @@
 from urllib.parse import parse_qs, quote
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
@@ -16,11 +16,10 @@ PAGE_SIZE = 100  # Stremio's page size; fewer results means end of catalog
 CACHE_SECONDS = 10
 CATALOG_PREFIX = "collection-"
 ALL_CATALOG = "cinematheque-all"
-# EXPERIMENT (branch experiment/stremio-deep-links): search-only catalog that
-# receives stremio:///search deep links; hidden from Board because search is required
+UNSORTED_CATALOG = "cinematheque-unsorted"
+# Catalog behind the collection action links (see the Milestone 6 section below)
 ACTIONS_CATALOG = "cinematheque-actions"
 ACTIONS_GENRE = "Actions"
-UNSORTED_CATALOG = "cinematheque-unsorted"
 
 
 def check_token(token: str) -> None:
@@ -82,35 +81,14 @@ def manifest(token: str, db: Session = Depends(get_db)):
                     "type": type_,
                     "id": f"{CATALOG_PREFIX}{collection.id}",
                     "name": f"{collection.name} Cinematheque",
-                    "extra": [
-                        {"name": "skip", "isRequired": False},
-                        # EXPERIMENT: lets a discover deep link pass a value in
-                        {"name": "genre", "isRequired": False, "options": ["All"]},
-                    ],
+                    "extra": [{"name": "skip", "isRequired": False}],
                 }
             )
-
-    # EXPERIMENT: catalogs that receive the deep link actions. Discover only
-    # opens catalogs whose required extras all have options, so a required
-    # genre with one option makes it openable while keeping it off the Board
-    # and the search page; the action itself travels in the search extra
-    for type in ("movie", "series"):
-        catalogs.append(
-            {
-                "type": type,
-                "id": ACTIONS_CATALOG,
-                "name": "Cinémathèque",
-                "extra": [
-                    {"name": "genre", "isRequired": True, "options": [ACTIONS_GENRE]},
-                    {"name": "search", "isRequired": False},
-                ],
-            }
-        )
 
     return cached(
         {
             "id": "com.leanardiles.cinematheque",
-            "version": "0.5.2",
+            "version": "0.6.0",
             "name": "Cinematheque",
             "description": "My library, organized into collections.",
             "resources": [
@@ -155,12 +133,6 @@ def catalog_response(
     except ValueError:
         return cached({"metas": []})
 
-    # EXPERIMENT: log deep link hits so we can see which ones reach the backend
-    if catalog_id == ACTIONS_CATALOG or "genre" in params:
-        print(f"DEEPLINK catalog={catalog_id} type={type} params={params}", flush=True)
-    if catalog_id == ACTIONS_CATALOG:
-        return not_cached({"metas": run_action(db, user, params.get("search", ""))})
-
     if catalog_id in (ALL_CATALOG, UNSORTED_CATALOG):
         # Most recently saved first, like the web app's default
         query = select(Title).where(Title.user_id == user.id, Title.type == type)
@@ -197,38 +169,6 @@ def catalog_response(
     return cached({"metas": [to_meta(title) for title in titles]})
 
 
-def run_action(db: Session, user, search: str) -> list[dict]:
-    """EXPERIMENT: 'add 3 tt0211915' files the film and answers with one card.
-
-    Anything else (a normal Stremio search) gets no results, so this catalog
-    stays out of the way on the search page.
-    """
-    from app.api.titles import add_to_collection
-
-    parts = search.split()
-    if len(parts) != 3 or parts[0] not in ("add", "remove") or not parts[1].isdigit():
-        return []
-    action, collection_id, imdb_id = parts[0], int(parts[1]), parts[2]
-
-    collection = db.get(Collection, collection_id)
-    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
-    if collection is None or collection.user_id != user.id or title is None:
-        return []
-
-    entry = db.get(CollectionTitle, (collection.id, title.id))
-    if action == "add" and entry is None:
-        add_to_collection(db, collection, title)
-        db.commit()
-    elif action == "remove" and entry is not None:
-        db.delete(entry)
-        db.commit()
-
-    done = "Added to" if action == "add" else "Removed from"
-    meta = to_meta(title)
-    meta["name"] = f"✓ {done} {collection.name}: {title.name}"
-    return [meta]
-
-
 @router.get("/{token}/catalog/{type}/{catalog_id}.json")
 def catalog(token: str, type: str, catalog_id: str, db: Session = Depends(get_db)):
     return catalog_response(token, type, catalog_id, None, db)
@@ -245,19 +185,24 @@ def catalog_with_extra(
 # Collection actions from inside Stremio (Milestone 6)
 #
 # Stremio lets addons add sources to a film's page, not buttons. So each
-# collection becomes a source: selecting it calls /act/..., which adds or
-# removes the film and redirects to a short confirmation clip. Because it is
-# ordinary playback, it works on every Stremio app, including TV.
+# collection becomes a source whose link opens Stremio's Discover screen on
+# an address of this addon that carries the action:
+#
+#   /{token}/do/add/{collection_id}/{imdb_id}/manifest.json
+#
+# Stremio asks that address for a catalog, which files the film and answers
+# with one confirmation card. Nothing plays, so the film isn't marked as
+# watched. The action has to live in the address: the TV app drops free-text
+# extras such as search from these links. Stremio treats the address as an
+# addon that isn't installed, so it may offer to install it; the manifest it
+# gets there only holds the actions catalog, so installing it does no harm.
 # The addon token in the path is what authorizes the change, like the manifest.
 # ---------------------------------------------------------------------------
 
 STREAM_NAME = "Cinémathèque"
-CLIPS = {"add": "added.mp4", "remove": "removed.mp4"}
-
-
-def external_links(url: str) -> dict:
-    """EXPERIMENT: TV apps ignore externalUrl and read their own field instead."""
-    return {"externalUrl": url, "androidTvUrl": url, "tizenUrl": url, "webosUrl": url}
+ACTIONS = {"add": "Added to", "remove": "Removed from"}
+ACTION_PREFIX = "/{token}/do/{action}/{collection_id}/{imdb_id}"
+WEB_APP = "https://web.strem.io"
 
 
 def public_base(request: Request) -> str:
@@ -272,16 +217,78 @@ def not_cached(content: dict) -> JSONResponse:
     return JSONResponse(content, headers={"Cache-Control": "no-cache"})
 
 
-# EXPERIMENT: the action travels in the addon address itself, since the TV
-# app drops free-text extras from Discover links. Stremio asks this address
-# for the catalog, so the request carries the action whatever the app keeps.
-ACTION_PREFIX = "/{token}/do/{action}/{collection_id}/{imdb_id}"
+def action_links(base: str, token: str, action: str, collection_id: int, title: Title) -> dict:
+    """Link fields for one action, per Stremio app.
+
+    Web and desktop read externalUrl: a web.strem.io address stays in the
+    browser (a stremio:// link would hand over to the desktop app). The TV
+    apps read their own fields and open stremio:// links inside the app.
+    """
+    addon_url = f"{base}/{token}/do/{action}/{collection_id}/{title.imdb_id}/manifest.json"
+    path = f"/discover/{quote(addon_url, safe='')}/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
+    app_link = f"stremio://{path}"
+    return {
+        "externalUrl": f"{WEB_APP}/#{path}",
+        "androidTvUrl": app_link,
+        "tizenUrl": app_link,
+        "webosUrl": app_link,
+    }
+
+
+def run_action(db: Session, action: str, collection_id: int, imdb_id: str) -> list[dict]:
+    """Add or remove a film and answer with one confirmation card.
+
+    Explicit add or remove (never toggle), so Stremio requesting the address
+    more than once can't undo the change.
+    """
+    from app.api.titles import add_to_collection  # shared with the web app's API
+
+    user = current_user(db)
+    collection = db.get(Collection, collection_id)
+    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
+    if collection is None or collection.user_id != user.id or title is None:
+        return []
+
+    entry = db.get(CollectionTitle, (collection.id, title.id))
+    if action == "add" and entry is None:
+        add_to_collection(db, collection, title)
+        db.commit()
+    elif action == "remove" and entry is not None:
+        db.delete(entry)
+        db.commit()
+
+    meta = to_meta(title)
+    meta["name"] = f"✓ {ACTIONS[action]} {collection.name}: {title.name}"
+    return [meta]
 
 
 @router.get(ACTION_PREFIX + "/manifest.json")
-def action_manifest(token: str, action: str, collection_id: int, imdb_id: str, db: Session = Depends(get_db)):
-    print(f"DEEPLINK action-manifest {action} {collection_id} {imdb_id}", flush=True)
-    return manifest(token, db)
+def action_manifest(token: str, action: str, collection_id: int, imdb_id: str):
+    """What Stremio sees at an action address: only the actions catalog."""
+    check_token(token)
+    if action not in ACTIONS:
+        raise HTTPException(status_code=404)
+    return not_cached(
+        {
+            "id": "com.leanardiles.cinematheque.action",
+            "version": "0.6.0",
+            "name": "Cinematheque action",
+            "description": "Files one film in a collection. No need to install it.",
+            "resources": ["catalog"],
+            "types": ["movie", "series"],
+            "catalogs": [
+                {
+                    "type": type_,
+                    "id": ACTIONS_CATALOG,
+                    "name": "Cinematheque",
+                    # A required genre with one option: Discover can open it,
+                    # the Board and the search page never request it
+                    "extra": [{"name": "genre", "isRequired": True, "options": [ACTIONS_GENRE]}],
+                }
+                for type_ in ("movie", "series")
+            ],
+        }
+    )
 
 
 @router.get(ACTION_PREFIX + "/catalog/{type}/{catalog_id}.json")
@@ -297,12 +304,9 @@ def action_catalog(
     db: Session = Depends(get_db),
 ):
     check_token(token)
-    print(
-        f"DEEPLINK action-catalog {action} {collection_id} {imdb_id} catalog={catalog_id} extra={extra}",
-        flush=True,
-    )
-    user = current_user(db)
-    return not_cached({"metas": run_action(db, user, f"{action} {collection_id} {imdb_id}")})
+    if action not in ACTIONS or catalog_id != ACTIONS_CATALOG:
+        return not_cached({"metas": []})
+    return not_cached({"metas": run_action(db, action, collection_id, imdb_id)})
 
 
 @router.get("/{token}/stream/{type}/{video_id}.json")
@@ -345,120 +349,16 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
             {
                 "name": STREAM_NAME,
                 "description": text,
-                "url": f"{base}/{token}/act/{action}/{collection.id}/{imdb_id}.mp4",
+                **action_links(base, token, action, collection.id, title),
             }
         )
-
-    # EXPERIMENT: three kinds of internal Stremio links, to see which ones the
-    # apps follow and which reach the backend (look for DEEPLINK in the logs)
-    manifest_url = f"{base}/{token}/manifest.json"
-    first = collections[0] if collections else None
-    if first is not None:
-        marker = f"cinematheque add {first.id} {imdb_id}"
-        result.append(
-            {
-                "name": "Test 1",
-                "description": f"Search link ({first.name})",
-                **external_links(f"stremio:///search?search={quote(marker)}"),
-            }
-        )
-        result.append(
-            {
-                "name": "Test 4",
-                "description": f"Discover action link: add to {first.name}",
-                **external_links(
-                    f"stremio:///discover/{quote(manifest_url, safe='')}"
-                    f"/{title.type}/{ACTIONS_CATALOG}"
-                    f"?genre={ACTIONS_GENRE}&search={quote(f'add {first.id} {imdb_id}')}"
-                ),
-            }
-        )
-        action_manifest_url = f"{base}/{token}/do/add/{first.id}/{imdb_id}/manifest.json"
-        result.append(
-            {
-                "name": "Test 5",
-                "description": f"Action in the addon address: add to {first.name}",
-                **external_links(
-                    f"stremio:///discover/{quote(action_manifest_url, safe='')}"
-                    f"/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
-                ),
-            }
-        )
-        result.append(
-            {
-                "name": "Test 6",
-                "description": f"Web address version of Test 5: add to {first.name}",
-                "externalUrl": (
-                    f"https://web.strem.io/#/discover/{quote(action_manifest_url, safe='')}"
-                    f"/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
-                ),
-            }
-        )
-        result.append(
-            {
-                "name": "Test 2",
-                "description": f"Discover link ({first.name})",
-                **external_links(
-                    f"stremio:///discover/{quote(manifest_url, safe='')}"
-                    f"/{title.type}/{CATALOG_PREFIX}{first.id}?genre=All"
-                ),
-            }
-        )
-    result.append(
-        {
-            "name": "Test 3",
-            "description": "Detail link (control)",
-            **external_links(f"stremio:///detail/{title.type}/{imdb_id}/{imdb_id}"),
-        }
-    )
 
     # Opens the web app with this film searched (desktop and phone; TVs usually can't)
     result.append(
         {
             "name": STREAM_NAME,
             "description": "Open in the Cinémathèque app",
-            **external_links(f"{settings.ui_url}/?q={quote(title.name)}"),
+            "externalUrl": f"{settings.ui_url}/?q={quote(title.name)}",
         }
     )
     return not_cached({"streams": result})
-
-
-@router.api_route("/{token}/act/{action}/{collection_id}/{imdb_id}.mp4", methods=["GET", "HEAD"])
-def act(
-    token: str,
-    action: str,
-    collection_id: int,
-    imdb_id: str,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """Add or remove a film, then play the matching confirmation clip.
-
-    Explicit add/remove (never toggle), so a player requesting the address
-    more than once, as video players often do, can't undo the change.
-    """
-    from app.api.titles import add_to_collection  # shared with the web app's API
-
-    check_token(token)
-    if action not in CLIPS:
-        raise HTTPException(status_code=404)
-    user = current_user(db)
-
-    collection = db.get(Collection, collection_id)
-    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
-    if collection is None or collection.user_id != user.id or title is None:
-        raise HTTPException(status_code=404)
-
-    entry = db.get(CollectionTitle, (collection.id, title.id))
-    if action == "add" and entry is None:
-        add_to_collection(db, collection, title)
-        db.commit()
-    elif action == "remove" and entry is not None:
-        db.delete(entry)
-        db.commit()
-
-    return RedirectResponse(
-        f"{public_base(request)}/clips/{CLIPS[action]}",
-        status_code=302,
-        headers={"Cache-Control": "no-store"},
-    )

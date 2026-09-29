@@ -102,13 +102,18 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 ## Milestone 6: Add to collection from inside Stremio
 
-Stremio lets addons add sources to a film's page, not buttons, so each collection appears as a source. Selecting one calls the API, which adds or removes the film and redirects to a short confirmation clip. Because it's ordinary playback, it works on every Stremio app, including TV.
+Stremio lets addons add sources to a film's page, not buttons, so each collection appears as a source. Selecting one opens Stremio's Discover screen on an addon address that carries the action (`/do/add/{collection}/{imdb id}/manifest.json`). Stremio requests a catalog from that address, which files the film and answers with a confirmation card. Nothing plays, so the film isn't marked as watched.
 
 - [x] Stream resource for `tt` IDs (series episodes map to the series): one entry per collection, ＋ Add to French or ✓ In LGBTQ+ (select to remove), for films in the library
-- [x] Action endpoint with explicit add or remove (safe to request twice), redirecting to an Added or Removed clip in `backend/public/clips/`
+- [x] Action address with explicit add or remove (safe to request twice), answering with a ✓ Added to or ✓ Removed from card
+- [x] Per app links: a web.strem.io address for Stremio Web (stays in the browser), `stremio://` links for the TV apps
 - [x] Entry opening the web app with the film searched (desktop and phone)
 - [x] Sync on the spot: a film saved in Stremio moments ago is brought in when its sources are opened, so the entries appear without waiting for the scheduled sync
-- [ ] Test on Stremio Web and the Stremio TV app
+- [x] Tested on Stremio Web, the Stremio desktop app and the Android TV app (Sony)
+- [ ] The source list only refreshes when the film is reopened (Stremio loads it once)
+- [ ] Stremio shows This addon is not installed on the confirmation screen, and the TV app falls back to another Discover catalog; look for a cleaner landing screen
+
+Tried first and dropped: redirecting to a short confirmation clip (playing it marked films as watched and added them to Continue Watching), and passing the action as a search value (the TV app drops free-text values from Discover links).
 
 ## Milestone 7: Showcase
 

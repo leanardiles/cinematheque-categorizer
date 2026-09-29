@@ -2,7 +2,7 @@
 
 ![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)
 
-> **Work in progress.** This project is under active development. The addon, the management API and a first version of the web app are deployed; the full collection management UI, in-app collection actions and library sync are still being built. See the [roadmap](ROADMAP.md) for what is done and what comes next.
+> **Work in progress.** This project is under active development. The addon, the management API, the web app and library sync are deployed and in daily use; polishing, a demo mode and tests are still to come. See the [roadmap](ROADMAP.md) for what is done and what comes next.
 
 A personal Stremio addon and web app for organizing a movie and TV library into collections.
 
@@ -17,14 +17,14 @@ Working now:
 * Stremio addon serving one catalog per collection, in a manually arranged order, from a Postgres database
 * Titles stored with their original title (English fallback for non-Latin scripts), English title and original language from TMDB
 * Token-protected management API: collections (create, rename, delete, reorder), library (add by IMDb ID or TMDB search, rename, delete, unsorted filter) and collection contents (add, remove, reorder)
-* React and TypeScript web app with token sign-in and the collection list, in a dark vintage cinema design
+* React and TypeScript web app in a dark vintage cinema design: library (All and Unsorted), poster grids, a menu to file each film in collections, search, sorting, drag to reorder collections
+* Sync from the Stremio library every 30 minutes (GitHub Actions), with Cinematheque All and Cinematheque Unsorted rows in Stremio
+* Add to or remove from a collection inside Stremio, on web, desktop and TV: each collection appears as a source on the film's page, and selecting it files the film without playing anything
 * Everything deployed on Vercel; every push to `main` redeploys
 
 Planned:
 
-* Collection view with a poster grid, drag to reorder, and adding films through search
-* Add to collection from inside Stremio, including the TV app
-* Sync from the Stremio library, with Unsorted and All rows
+* Demo mode for visitors, screenshots, tests
 
 Later: Letterboxd watchlist import, and filters by director, country, year and actor.
 
@@ -59,7 +59,9 @@ All `/api` routes require `Authorization: Bearer <API_TOKEN>`. Interactive docs 
 | Collection contents | `GET/POST /api/collections/{id}/titles`, `DELETE /api/collections/{id}/titles/{title_id}`, `PUT /api/collections/{id}/titles/order` |
 | Library | `GET/POST /api/titles`, `PATCH/DELETE /api/titles/{id}` |
 | Search | `GET /api/search?q=...&type=movie` |
-| Stremio addon | `GET /{addon_token}/manifest.json`, `GET /{addon_token}/catalog/{type}/{id}.json` |
+| Stremio addon | `GET /{addon_token}/manifest.json`, `GET /{addon_token}/catalog/{type}/{id}.json`, `GET /{addon_token}/stream/{type}/{id}.json` |
+| Collection actions | `GET /{addon_token}/do/{add\|remove}/{collection_id}/{imdb_id}/catalog/...` (reached from the Stremio source links) |
+| Sync | `POST /api/sync` |
 
 ## Local development
 
