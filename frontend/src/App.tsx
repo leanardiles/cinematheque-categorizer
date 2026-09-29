@@ -2,67 +2,114 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, tokenStore } from './api/client';
 import type { Collection } from './api/types';
 import CollectionView from './components/CollectionView';
-import Sidebar from './components/Sidebar';
+import LibraryView from './components/LibraryView';
+import Sidebar, { type View } from './components/Sidebar';
 import TokenScreen from './components/TokenScreen';
 import styles from './App.module.css';
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(() => tokenStore.get() !== null);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  const [view, setView] = useState<View>({ kind: 'all' });
   const [error, setError] = useState<string | null>(null);
 
   const signOut = useCallback(() => {
     tokenStore.clear();
     setAuthenticated(false);
     setCollections([]);
-    setSelectedId(null);
+    setLibraryCount(null);
+    setView({ kind: 'all' });
   }, []);
 
-  const loadCollections = useCallback(() => {
-    api
-      .listCollections()
-      .then((data) => {
-        setCollections(data);
-        setSelectedId((current) =>
-          current !== null && data.some((c) => c.id === current) ? current : data[0]?.id ?? null,
+  /** Reloads the collections and library count shown in the sidebar. */
+  const loadSidebar = useCallback(() => {
+    Promise.all([api.listCollections(), api.listTitles()])
+      .then(([collectionData, titleData]) => {
+        setCollections(collectionData);
+        setLibraryCount(titleData.length);
+        // If the open collection no longer exists, fall back to All
+        setView((current) =>
+          current.kind === 'collection' && !collectionData.some((c) => c.id === current.id)
+            ? { kind: 'all' }
+            : current,
         );
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) signOut();
-        else setError('Could not load collections.');
+        else setError('Could not load your collections.');
       });
   }, [signOut]);
 
   useEffect(() => {
-    if (authenticated) loadCollections();
-  }, [authenticated, loadCollections]);
+    if (authenticated) loadSidebar();
+  }, [authenticated, loadSidebar]);
+
+  async function createCollection(name: string): Promise<string | null> {
+    try {
+      const collection = await api.createCollection(name);
+      loadSidebar();
+      setView({ kind: 'collection', id: collection.id });
+      return null;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        signOut();
+        return null;
+      }
+      if (err instanceof ApiError && err.status === 409) {
+        return 'A collection with this name already exists.';
+      }
+      return 'Could not create the collection.';
+    }
+  }
+
+  async function reorderCollections(ids: number[]) {
+    const previous = collections;
+    // Show the new order right away, and undo it if saving fails
+    setCollections(ids.map((id) => collections.find((c) => c.id === id)!));
+    try {
+      setCollections(await api.reorderCollections(ids));
+    } catch (err) {
+      setCollections(previous);
+      if (err instanceof ApiError && err.status === 401) signOut();
+      else setError('Could not save the new order.');
+    }
+  }
 
   if (!authenticated) {
     return <TokenScreen onAuthenticated={() => setAuthenticated(true)} />;
   }
 
-  const selected = collections.find((c) => c.id === selectedId);
+  const selected =
+    view.kind === 'collection' ? collections.find((c) => c.id === view.id) : undefined;
 
   return (
     <div className={styles.layout}>
       <Sidebar
         collections={collections}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
+        libraryCount={libraryCount}
+        view={view}
+        onSelect={setView}
+        onCreateCollection={createCollection}
+        onReorderCollections={reorderCollections}
         onSignOut={signOut}
       />
       <main className={styles.main}>
         {error && <p role="alert">{error}</p>}
-        {selected ? (
+        {view.kind === 'all' && (
+          <LibraryView
+            collections={collections}
+            onChanged={loadSidebar}
+            onUnauthorized={signOut}
+          />
+        )}
+        {selected && (
           <CollectionView
             key={selected.id}
             collection={selected}
-            onChanged={loadCollections}
+            onChanged={loadSidebar}
             onUnauthorized={signOut}
           />
-        ) : (
-          collections.length === 0 && !error && <p>No collections yet.</p>
         )}
       </main>
     </div>

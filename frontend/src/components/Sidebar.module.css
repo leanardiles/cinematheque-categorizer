@@ -31,8 +31,33 @@
   color: var(--color-text-muted);
 }
 
-.heading {
+.headingRow {
+  display: flex;
+  align-items: center;
   padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+/* 24px button, offset so its center lines up with the counts below */
+.addButton {
+  margin-left: auto;
+  margin-right: -8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.addButton:hover,
+.addButton[aria-expanded='true'] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .section {
@@ -44,6 +69,7 @@
 .item {
   display: flex;
   align-items: center;
+  gap: 12px;
   min-height: var(--touch-target);
   padding: 0 12px;
   border: 0;
@@ -73,6 +99,61 @@
   color: var(--color-accent);
 }
 
+/* Sortable collection rows */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  touch-action: none; /* lets touch screens drag instead of scroll */
+}
+
+.row[data-dragging] {
+  z-index: 1;
+}
+
+.row[data-dragging] .item {
+  background: var(--color-surface-raised);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+}
+
+/* Grip handle in the sidebar padding, left of the item */
+.handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -22px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.row:hover .handle,
+.handle:focus-visible,
+.row[data-dragging] .handle {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .handle {
+    opacity: 1;
+  }
+}
+
 .footer {
   margin-top: auto;
   display: flex;
@@ -95,4 +176,65 @@
   font-size: 11px;
   line-height: 1.5;
   color: var(--color-text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.input {
+  height: var(--touch-target);
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.primary {
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+}
+
+.error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

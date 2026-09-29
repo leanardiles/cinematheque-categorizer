@@ -32,7 +32,22 @@ def collection_ids_for(db: Session, title_ids: list[int]) -> dict[int, list[int]
     return result
 
 
-def to_out(title: Title, collection_ids: list[int]) -> TitleOut:
+def sources_for(db: Session, title_ids: list[int]) -> dict[int, list[str]]:
+    """Map each title ID to the sources it's currently present in."""
+    result: dict[int, list[str]] = {title_id: [] for title_id in title_ids}
+    if not title_ids:
+        return result
+    rows = db.execute(
+        select(TitleSource.title_id, TitleSource.source).where(
+            TitleSource.title_id.in_(title_ids), TitleSource.present.is_(True)
+        )
+    ).all()
+    for title_id, source in rows:
+        result[title_id].append(source)
+    return result
+
+
+def to_out(title: Title, collection_ids: list[int], sources: list[str]) -> TitleOut:
     return TitleOut(
         id=title.id,
         imdb_id=title.imdb_id,
@@ -44,12 +59,15 @@ def to_out(title: Title, collection_ids: list[int]) -> TitleOut:
         year=title.year,
         poster=title.poster,
         collection_ids=sorted(collection_ids),
+        sources=sorted(sources),
     )
 
 
 def titles_out(db: Session, titles: list[Title]) -> list[TitleOut]:
-    ids = collection_ids_for(db, [t.id for t in titles])
-    return [to_out(t, ids[t.id]) for t in titles]
+    ids = [t.id for t in titles]
+    collections = collection_ids_for(db, ids)
+    sources = sources_for(db, ids)
+    return [to_out(t, collections[t.id], sources[t.id]) for t in titles]
 
 
 def get_owned_title(db: Session, user: User, title_id: int) -> Title:

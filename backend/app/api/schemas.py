@@ -35,6 +35,7 @@ class TitleOut(BaseModel):
     year: int | None
     poster: str | None
     collection_ids: list[int]
+    sources: list[str]
 
 
 class TitleCreate(BaseModel):

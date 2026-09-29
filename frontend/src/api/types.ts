@@ -19,6 +19,7 @@ export interface Title {
   year: number | null;
   poster: string | null;
   collection_ids: number[];
+  sources: string[];
 }
 
 export interface SearchResult {
