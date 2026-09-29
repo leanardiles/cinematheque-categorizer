@@ -89,20 +89,22 @@ def manifest(token: str, db: Session = Depends(get_db)):
                 }
             )
 
-    # EXPERIMENT: search-only catalog for the search deep link test
-    catalogs.append(
-        {
-            "type": "movie",
-            "id": ACTIONS_CATALOG,
-            "name": "Cinémathèque",
-            "extra": [{"name": "search", "isRequired": True}],
-        }
-    )
+    # EXPERIMENT: search-only catalogs that receive the deep link actions;
+    # required search keeps them off the Board
+    for type in ("movie", "series"):
+        catalogs.append(
+            {
+                "type": type,
+                "id": ACTIONS_CATALOG,
+                "name": "Cinémathèque",
+                "extra": [{"name": "search", "isRequired": True}],
+            }
+        )
 
     return cached(
         {
             "id": "com.leanardiles.cinematheque",
-            "version": "0.5.0",
+            "version": "0.5.1",
             "name": "Cinematheque",
             "description": "My library, organized into collections.",
             "resources": [
@@ -151,14 +153,7 @@ def catalog_response(
     if catalog_id == ACTIONS_CATALOG or "genre" in params:
         print(f"DEEPLINK catalog={catalog_id} type={type} params={params}", flush=True)
     if catalog_id == ACTIONS_CATALOG:
-        # Answer with the whole library so the search page shows something from us
-        titles = db.scalars(
-            select(Title)
-            .where(Title.user_id == user.id, Title.type == type)
-            .order_by(func.coalesce(Title.added_at, Title.created_at).desc())
-            .limit(20)
-        ).all()
-        return not_cached({"metas": [to_meta(title) for title in titles]})
+        return not_cached({"metas": run_action(db, user, params.get("search", ""))})
 
     if catalog_id in (ALL_CATALOG, UNSORTED_CATALOG):
         # Most recently saved first, like the web app's default
@@ -194,6 +189,38 @@ def catalog_response(
     ).all()
 
     return cached({"metas": [to_meta(title) for title in titles]})
+
+
+def run_action(db: Session, user, search: str) -> list[dict]:
+    """EXPERIMENT: 'add 3 tt0211915' files the film and answers with one card.
+
+    Anything else (a normal Stremio search) gets no results, so this catalog
+    stays out of the way on the search page.
+    """
+    from app.api.titles import add_to_collection
+
+    parts = search.split()
+    if len(parts) != 3 or parts[0] not in ("add", "remove") or not parts[1].isdigit():
+        return []
+    action, collection_id, imdb_id = parts[0], int(parts[1]), parts[2]
+
+    collection = db.get(Collection, collection_id)
+    title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
+    if collection is None or collection.user_id != user.id or title is None:
+        return []
+
+    entry = db.get(CollectionTitle, (collection.id, title.id))
+    if action == "add" and entry is None:
+        add_to_collection(db, collection, title)
+        db.commit()
+    elif action == "remove" and entry is not None:
+        db.delete(entry)
+        db.commit()
+
+    done = "Added to" if action == "add" else "Removed from"
+    meta = to_meta(title)
+    meta["name"] = f"✓ {done} {collection.name}: {title.name}"
+    return [meta]
 
 
 @router.get("/{token}/catalog/{type}/{catalog_id}.json")
@@ -294,6 +321,16 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
                 "name": "Test 1",
                 "description": f"Search link ({first.name})",
                 **external_links(f"stremio:///search?search={quote(marker)}"),
+            }
+        )
+        result.append(
+            {
+                "name": "Test 4",
+                "description": f"Discover action link: add to {first.name}",
+                **external_links(
+                    f"stremio:///discover/{quote(manifest_url, safe='')}"
+                    f"/{title.type}/{ACTIONS_CATALOG}?search={quote(f'add {first.id} {imdb_id}')}"
+                ),
             }
         )
         result.append(
