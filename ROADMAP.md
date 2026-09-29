@@ -86,15 +86,17 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Test on Stremio Web and TV
 - [ ] Check the Vercel function region is close to the Supabase region
 
-## Milestone 5: Stremio library sync
+## Milestone 5: Stremio library sync (done)
 
-- [ ] Research the unofficial Stremio library API; document findings in `docs/reference/stremio-library-api.md`
-- [ ] Sync endpoint protected by `SYNC_SECRET`; upsert saved titles with source `stremio`
-- [ ] Films removed from the Stremio library are deleted here too, including their collection entries (same as deleting from All)
-- [ ] Deleting from All: allowed for manually added films; for films synced from Stremio, show a message to remove them from the Stremio library instead (see open question below)
-- [ ] GitHub Actions scheduled workflow calling the sync endpoint
-- [ ] Stremio catalogs: Cinematheque All (always first) and Unsorted
-- [ ] Library view in the UI: All and Unsorted, switch between original and English title
+- [x] Research the unofficial Stremio library API; document findings in `docs/reference/stremio-library-api.md`
+- [x] Sync endpoint protected by `SYNC_SECRET`; upsert saved titles with source `stremio`, original titles from TMDB, Stremio's save date
+- [x] Films removed from the Stremio library are deleted here too, including their collection entries (same as deleting from All)
+- [x] Deleting from All: allowed for manually added films; hidden for films synced from Stremio (see open question below)
+- [x] For synced films, a short hint in the collections menu that they're removed from the Stremio library instead
+- [x] GitHub Actions scheduled workflow calling the sync endpoint every 30 minutes
+- [x] Stremio catalogs: Cinematheque All and Cinematheque Unsorted, first in the manifest, most recently saved first
+- [x] Library view in the UI: All and Unsorted
+- [x] Switch a film's display name between its original and English title (in the collections menu)
 
 **Open question:** a film deleted from All but still saved in the Stremio library would come back on the next sync. Leaning towards the simplest option for now: the Stremio library is the source of truth for synced films, so the UI doesn't offer deleting them from All and instead says to remove the film from the Stremio library, and the next sync removes it here. Films added manually (not from Stremio) can still be deleted from All. Other options for later: remember deleted films and skip them during sync, or also remove them from the Stremio library.
 
