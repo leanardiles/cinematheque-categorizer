@@ -100,7 +100,9 @@ The first goal is **collections**: named groups of films from my library (for ex
 
 **Open question:** a film deleted from All but still saved in the Stremio library would come back on the next sync. Leaning towards the simplest option for now: the Stremio library is the source of truth for synced films, so the UI doesn't offer deleting them from All and instead says to remove the film from the Stremio library, and the next sync removes it here. Films added manually (not from Stremio) can still be deleted from All. Other options for later: remember deleted films and skip them during sync, or also remove them from the Stremio library.
 
-## Milestone 6: Add to collection from inside Stremio
+## Milestone 6: Add to collection from inside Stremio (next phase)
+
+Planned for the next phase, after using the app for a while. Each entry is a stream whose address points to the API with a signed code; selecting it adds or removes the film and plays a short confirmation clip.
 
 - [ ] Stream resource for `tt` IDs returning one entry per collection (Add to French, In LGBTQ+ (remove), and so on)
 - [ ] Action endpoint that adds or removes the film and returns a short confirmation clip, so it works on TV
