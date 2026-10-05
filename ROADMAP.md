@@ -115,11 +115,6 @@ Stremio lets addons add sources to a film's page, not buttons, so each collectio
 
 Tried first and dropped: redirecting to a short confirmation clip (playing it marked films as watched and added them to Continue Watching), and passing the action as a search value (the TV app drops free-text values from Discover links).
 
-## Milestone 7: Showcase
-
-- [ ] Demo mode for visitors: an Explore demo button on the token screen that runs the UI on sample data, read-only, no token needed
-- [ ] Screenshots or a short GIF of the app and the Stremio rows in the README
-
 ## Later
 
 - [ ] Drag a poster from All onto a collection in the sidebar to add it (dnd-kit, one shared drag context for posters and collection reordering; the menu stays as the accessible way)
@@ -128,10 +123,4 @@ Tried first and dropped: redirecting to a short confirmation clip (playing it ma
 - [ ] TMDB enrichment: directors, cast, countries, genres, year
 - [ ] Filter catalogs by director, country, year and actor, with `search` syntax such as `director:almodovar year:1990-2005`
 - [ ] Multi-user support: accounts and one addon token per user
-
-## Housekeeping
-
-- [ ] Save Stremio addon protocol docs in `docs/reference/stremio-addon-protocol/` (SDK commit `ec4e0a4`)
-- [ ] Renormalize line endings (`git add --renormalize .`)
 - [ ] Tests for catalog routes and collection ordering
-- [ ] Delete the seed test films once real library data is in place
