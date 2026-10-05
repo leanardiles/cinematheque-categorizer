@@ -358,12 +358,6 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
 
     base = public_base(request)
     web = from_stremio_web(request)
-    # Which app asked, to check the web or app choice in the Vercel logs
-    print(
-        f"STREAMS web={web} origin={request.headers.get('origin')} "
-        f"ua={request.headers.get('user-agent')}",
-        flush=True,
-    )
     result = []
     for collection in collections:
         if collection.id in in_collections:
