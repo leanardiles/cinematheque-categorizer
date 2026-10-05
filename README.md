@@ -1,14 +1,28 @@
 # Cinematheque Categorizer
 
-![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)
+![Status: in daily use](https://img.shields.io/badge/status-in%20daily%20use-2ea44f)
 
-> **Work in progress.** This project is under active development. The addon, the management API, the web app and library sync are deployed and in daily use; polishing, a demo mode and tests are still to come. See the [roadmap](ROADMAP.md) for what is done and what comes next.
+> **In daily use.** The addon, the management API, the web app and library sync are deployed and used every day on Stremio Web, desktop and TV. Ideas for future work are tracked in the [roadmap](ROADMAP.md).
 
 A personal Stremio addon and web app for organizing a movie and TV library into collections.
 
-Stremio's library is a flat list with no way to group titles. This project lets me create collections (for example French, Argentinian, LGBTQ+) and add films to them, similar to collections on an e-reader. A film can belong to several collections or to none. Each collection appears in Stremio as its own row on the home screen and in Discover, on web and TV, and playback still works through whatever stream addons are installed.
+Stremio's library is a flat list with no way to group titles. This project lets me create collections (for example French, Argentinian, Animated) and add films to them, similar to collections on an e-reader. A film can belong to several collections or to none. Each collection appears in Stremio as its own row on the home screen and in Discover, on web and TV, and playback still works through whatever stream addons are installed.
 
 **Live:** [cinematheque-categorizer.vercel.app](https://cinematheque-categorizer.vercel.app) (management app, private token required) · [cinematheque-api.vercel.app](https://cinematheque-api.vercel.app) (API)
+
+## In Stremio
+
+Each collection becomes a row on the Stremio home screen, next to Cinematheque All (the whole library, most recently saved first) and Cinematheque Unsorted.
+
+![Stremio home screen with the Cinematheque All row](docs/screenshots/stremio-home-rows.png)
+
+Filing works from inside Stremio. Each collection appears as a source on the film's page; selecting it adds the film to that collection (or removes it) without playing anything, on web, desktop and TV.
+
+![A film's page in Stremio with Add to French, Add to LGBTQ+ and other collection entries](docs/screenshots/stremio-film-filing.png)
+
+The collections are also available as catalogs in Discover.
+
+![Stremio Discover with the Cinematheque catalogs in the catalog menu](docs/screenshots/stremio-discover-catalogs.png)
 
 ## Features
 
@@ -22,18 +36,18 @@ Working now:
 * Add to or remove from a collection inside Stremio, on web, desktop and TV: each collection appears as a source on the film's page, and selecting it files the film without playing anything
 * Everything deployed on Vercel; every push to `main` redeploys
 
-Planned:
-
-* Demo mode for visitors, screenshots, tests
-
-Later: Letterboxd watchlist import, and filters by director, country, year and actor.
+Possible next steps: automated tests, Letterboxd import, and filters by director, country and year (see the [roadmap](ROADMAP.md)).
 
 ## How it works
 
-```
-Stremio (web, TV)  ──manifest and catalogs──▶  FastAPI on Vercel  ◀──REST API──  React app on Vercel
-                                                     │
-                                          Supabase Postgres, TMDB
+```mermaid
+flowchart LR
+    S["Stremio<br/>web, desktop, TV"] -- "manifest, catalogs,<br/>collection actions" --> A["FastAPI backend<br/>on Vercel"]
+    W["React web app<br/>on Vercel"] -- "REST API" --> A
+    G["GitHub Actions<br/>every 30 minutes"] -- "sync" --> A
+    A --> D[("Supabase<br/>Postgres")]
+    A -- "film data" --> T["TMDB"]
+    A -- "saved library" --> L["Stremio<br/>library API"]
 ```
 
 * **Addon:** Stremio addons are HTTP services that return JSON. Stremio reads the addon's `manifest.json` to learn which catalogs it provides, then requests those catalogs to fill rows in its interface. Titles are identified by IMDb ID, so stream addons such as Torrentio can provide playback for any title this addon lists. The addon URL includes a private token.
