@@ -30,6 +30,8 @@ interface Props {
   onCreateCollection: (name: string) => Promise<string | null>;
   /** Called with every collection ID in the new order after a drag. */
   onReorderCollections: (ids: number[]) => void;
+  onInstallAddon: () => void;
+  onDisconnectStremio: () => void;
   onSignOut: () => void;
 }
 
@@ -40,6 +42,8 @@ export default function Sidebar({
   onSelect,
   onCreateCollection,
   onReorderCollections,
+  onInstallAddon,
+  onDisconnectStremio,
   onSignOut,
 }: Props) {
   const [creating, setCreating] = useState(false);
@@ -180,9 +184,17 @@ export default function Sidebar({
       </div>
 
       <div className={styles.footer}>
-        <button type="button" className={styles.signOut} onClick={onSignOut}>
-          Sign out
-        </button>
+        <div className={styles.footerLinks}>
+          <button type="button" className={styles.signOut} onClick={onInstallAddon}>
+            Install in Stremio
+          </button>
+          <button type="button" className={styles.signOut} onClick={onDisconnectStremio}>
+            Disconnect Stremio
+          </button>
+          <button type="button" className={styles.signOut} onClick={onSignOut}>
+            Sign out
+          </button>
+        </div>
         <p className={styles.attribution}>
           This product uses the TMDB API but is not endorsed or certified by TMDB.
         </p>

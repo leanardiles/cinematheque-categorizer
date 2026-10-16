@@ -1,4 +1,12 @@
-import type { Collection, Me, SearchResult, Title, TitleType } from './types';
+import type {
+  AddonLink,
+  Collection,
+  Me,
+  SearchResult,
+  StremioConnectResult,
+  Title,
+  TitleType,
+} from './types';
 
 const API_URL = import.meta.env.VITE_API_URL.replace(/\/$/, '');
 const TOKEN_KEY = 'cinematheque.apiToken';
@@ -17,6 +25,19 @@ export const tokenStore = {
   set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
+
+/**
+ * Signs in from an invite link (…/#invite=<token>): saves the token and
+ * removes it from the address bar, so it isn't left in the history or
+ * copied along with the address. Runs once, before the app renders.
+ */
+export function takeInviteToken(): void {
+  const match = window.location.hash.match(/^#invite=([\w-]+)$/);
+  if (!match) return;
+  tokenStore.set(match[1]);
+  const { pathname, search } = window.location;
+  window.history.replaceState(null, '', pathname + search);
+}
 
 async function request<T>(
   path: string,
@@ -48,8 +69,17 @@ async function request<T>(
 }
 
 export const api = {
-  // Auth
+  // Account
   me: (token?: string) => request<Me>('/api/me', { token }),
+  connectStremio: (
+    credentials: { email: string; password: string } | { auth_key: string },
+  ) =>
+    request<StremioConnectResult>('/api/stremio/connect', {
+      method: 'POST',
+      body: credentials,
+    }),
+  disconnectStremio: () => request<void>('/api/stremio/connect', { method: 'DELETE' }),
+  addonLink: () => request<AddonLink>('/api/me/addon-link', { method: 'POST' }),
 
   // Collections
   listCollections: () => request<Collection[]>('/api/collections'),

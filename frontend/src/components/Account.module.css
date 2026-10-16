@@ -1,0 +1,210 @@
+/* Connect Stremio screen, addon install panel and dialog */
+
+.screen {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 40px 36px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.dialog {
+  width: min(520px, calc(100% - 32px));
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog::backdrop {
+  background: rgba(11, 12, 17, 0.7);
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--color-accent);
+}
+
+.heading {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.note {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.input {
+  min-width: 0;
+  height: var(--touch-target);
+  padding: 0 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row .input {
+  flex: 1;
+}
+
+/* Install buttons, stacked full width */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.primary {
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: var(--color-on-accent);
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.secondary:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.continue {
+  align-self: flex-end;
+  margin-top: 12px;
+  min-height: var(--touch-target);
+  padding: 0 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+}
+
+.continue:hover {
+  border-color: var(--color-accent);
+}
+
+.link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.link:hover {
+  color: var(--color-accent);
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-danger);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: all;
+}
+
+.steps kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+}

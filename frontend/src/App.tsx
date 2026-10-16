@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, tokenStore } from './api/client';
-import type { Collection } from './api/types';
+import type { Collection, Me } from './api/types';
+import AddonDialog from './components/AddonDialog';
 import CollectionView from './components/CollectionView';
+import ConfirmDialog from './components/ConfirmDialog';
+import ConnectStremio from './components/ConnectStremio';
 import LibraryView from './components/LibraryView';
 import SearchBar from './components/SearchBar';
 import Sidebar, { type View } from './components/Sidebar';
@@ -10,6 +13,10 @@ import styles from './App.module.css';
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(() => tokenStore.get() !== null);
+  // Who is signed in; null while loading
+  const [me, setMe] = useState<Me | null>(null);
+  const [addonOpen, setAddonOpen] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [view, setView] = useState<View>({ kind: 'all' });
@@ -20,6 +27,7 @@ export default function App() {
   const signOut = useCallback(() => {
     tokenStore.clear();
     setAuthenticated(false);
+    setMe(null);
     setCollections([]);
     setLibraryCount(null);
     setView({ kind: 'all' });
@@ -46,8 +54,31 @@ export default function App() {
   }, [signOut]);
 
   useEffect(() => {
-    if (authenticated) loadSidebar();
-  }, [authenticated, loadSidebar]);
+    if (!authenticated) return;
+    api
+      .me()
+      .then(setMe)
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) signOut();
+        else setError('Could not reach the server.');
+      });
+  }, [authenticated, signOut]);
+
+  const connected = me?.stremio_connected === true;
+  useEffect(() => {
+    if (connected) loadSidebar();
+  }, [connected, loadSidebar]);
+
+  async function disconnectStremio() {
+    setConfirmDisconnect(false);
+    try {
+      await api.disconnectStremio();
+      setMe((current) => (current ? { ...current, stremio_connected: false } : current));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) signOut();
+      else setError('Could not disconnect Stremio.');
+    }
+  }
 
   async function createCollection(name: string): Promise<string | null> {
     try {
@@ -84,6 +115,21 @@ export default function App() {
     return <TokenScreen onAuthenticated={() => setAuthenticated(true)} />;
   }
 
+  if (me === null) {
+    return error ? <p role="alert">{error}</p> : null;
+  }
+
+  if (!me.stremio_connected) {
+    return (
+      <ConnectStremio
+        name={me.name}
+        onDone={() => setMe({ ...me, stremio_connected: true })}
+        onUnauthorized={signOut}
+        onSignOut={signOut}
+      />
+    );
+  }
+
   const selected =
     view.kind === 'collection' ? collections.find((c) => c.id === view.id) : undefined;
   const searching = query.trim() !== '';
@@ -103,7 +149,22 @@ export default function App() {
         onSelect={selectView}
         onCreateCollection={createCollection}
         onReorderCollections={reorderCollections}
+        onInstallAddon={() => setAddonOpen(true)}
+        onDisconnectStremio={() => setConfirmDisconnect(true)}
         onSignOut={signOut}
+      />
+      <AddonDialog
+        open={addonOpen}
+        onClose={() => setAddonOpen(false)}
+        onUnauthorized={signOut}
+      />
+      <ConfirmDialog
+        open={confirmDisconnect}
+        title="Disconnect Stremio?"
+        message="Your collections stay, but your library stops syncing until you connect Stremio again."
+        confirmLabel="Disconnect"
+        onConfirm={disconnectStremio}
+        onCancel={() => setConfirmDisconnect(false)}
       />
       <main className={styles.main}>
         <div className={styles.topBar}>

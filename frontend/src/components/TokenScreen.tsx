@@ -15,9 +15,12 @@ export default function TokenScreen({ onAuthenticated }: Props) {
     event.preventDefault();
     setChecking(true);
     setError(null);
+    // Accept a whole invite link as well as a bare token
+    const value = token.trim();
+    const cleaned = value.includes('#invite=') ? value.split('#invite=')[1] : value;
     try {
-      await api.me(token.trim());
-      tokenStore.set(token.trim());
+      await api.me(cleaned);
+      tokenStore.set(cleaned);
       onAuthenticated();
     } catch (err) {
       setError(
@@ -40,11 +43,11 @@ export default function TokenScreen({ onAuthenticated }: Props) {
           <a href="https://github.com/leanardiles/cinematheque-categorizer">
             View the source on GitHub
           </a>
-          .
+          . Invited? Open the link you were sent, or paste it here.
         </p>
 
         <label className={styles.label} htmlFor="api-token">
-          API token
+          Access token
         </label>
         <input
           id="api-token"
