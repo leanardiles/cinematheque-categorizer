@@ -79,6 +79,20 @@ export default function CollectionView({
     }
   }
 
+  /** Saves a film's note; resolves to an error message, or null. */
+  async function saveNote(title: Title, note: string | null): Promise<string | null> {
+    try {
+      const updated = await api.setNote(title.id, note);
+      setTitles((current) =>
+        current ? current.map((t) => (t.id === title.id ? { ...t, note: updated.note } : t)) : current,
+      );
+      return null;
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) onUnauthorized();
+      return 'Could not save the note. Try again.';
+    }
+  }
+
   function startRename() {
     setNewName(collection.name);
     setRenameError(null);
@@ -224,6 +238,7 @@ export default function CollectionView({
                 removeLabel={`Remove ${title.name} from ${collection.name}`}
                 note={otherCollections(title)}
                 onRemove={() => setPendingRemoval(title)}
+                onSaveNote={(note) => saveNote(title, note)}
               />
             </li>
           ))}

@@ -138,6 +138,9 @@ export const api = {
   ) => request<Title>('/api/titles', { method: 'POST', body }),
   renameTitle: (id: number, name: string) =>
     request<Title>(`/api/titles/${id}`, { method: 'PATCH', body: { name } }),
+  /** An empty or null note clears it. */
+  setNote: (id: number, note: string | null) =>
+    request<Title>(`/api/titles/${id}`, { method: 'PATCH', body: { note: note ?? '' } }),
   deleteTitle: (id: number) => request<void>(`/api/titles/${id}`, { method: 'DELETE' }),
 
   // Search

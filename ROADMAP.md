@@ -131,9 +131,20 @@ Invite only, for a few friends. Each user has their own library, collections, St
 - [x] Account links in the sidebar: install in Stremio, set up or change the login, disconnect Stremio, sign out
 - [x] Backend tests (pytest, in-memory SQLite) and a Tests workflow on GitHub Actions, including isolation between users
 
-## Later
+## Milestone 8: Notes on films (done)
 
-- [ ] Notes on films (for example recommended by a friend), shown in the web app and as the first Cinémathèque entry on the film's page in Stremio
+A short personal note per film (who recommended it, why it's special), independent of collections.
+
+- [x] Nullable `note` column on `titles`, up to 120 characters so it fits fully in Stremio; saved through the existing film update endpoint (an empty note clears it)
+- [x] Note icon at the bottom right of each poster: gold and always visible when there's a note (hovering shows it), on hover otherwise, always visible on touch screens
+- [x] Small editor over the poster to add, edit or delete the note, with a character count; Enter saves, Escape or a click outside closes
+- [x] Search matches notes too (for example, every film recommended by Ana)
+- [x] In Stremio, the note is the first Cinémathèque entry on the film's page (web, desktop and TV), broken into short lines because Stremio cuts long ones; selecting it just reopens the page
+- [x] Tests: add, edit, clear, the 120 character limit, isolation between users, search, and the Stremio entry
+
+Known limit: a film removed from the Stremio library is deleted by the sync, and its note with it.
+
+## Later
 - [ ] Drag a poster from All onto a collection in the sidebar to add it (dnd-kit, one shared drag context for posters and collection reordering; the menu stays as the accessible way)
 - [ ] Decide whether the app can add films itself, and how: TMDB search adding films that aren't in the Stremio library (two kinds of films, different delete rules), or adding them here and to the Stremio library at the same time (one source of truth, but writes through the unofficial Stremio API)
 - [ ] Letterboxd watchlist import (via the Letterboxd addon catalog, with CSV export as fallback)

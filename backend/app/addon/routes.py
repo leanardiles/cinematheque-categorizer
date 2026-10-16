@@ -1,3 +1,4 @@
+import textwrap
 from urllib.parse import parse_qs, quote, urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -231,10 +232,8 @@ def from_stremio_web(request: Request) -> bool:
     return host.endswith(("strem.io", "stremio.com"))
 
 
-def action_links(
-    base: str, token: str, action: str, collection_id: int, title: Title, web: bool
-) -> dict:
-    """Link fields for one action.
+def stremio_links(path: str, web: bool) -> dict:
+    """Link fields that open a Stremio screen (a path like /detail/...).
 
     The Android TV app opens externalUrl too (it ignored androidTvUrl in
     testing), so one link can't serve every app. Stremio Web gets a
@@ -242,8 +241,6 @@ def action_links(
     there would hand over to the desktop app. The other apps get stremio://,
     which they open inside the app.
     """
-    addon_url = f"{base}/{token}/do/{action}/{collection_id}/{title.imdb_id}/manifest.json"
-    path = f"/discover/{quote(addon_url, safe='')}/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
     if web:
         return {"externalUrl": f"{WEB_APP}/#{path}"}
     app_link = f"stremio://{path}"
@@ -252,6 +249,33 @@ def action_links(
         "androidTvUrl": app_link,
         "tizenUrl": app_link,
         "webosUrl": app_link,
+    }
+
+
+def action_links(
+    base: str, token: str, action: str, collection_id: int, title: Title, web: bool
+) -> dict:
+    """Link fields for one collection action (see the section comment above)."""
+    addon_url = f"{base}/{token}/do/{action}/{collection_id}/{title.imdb_id}/manifest.json"
+    path = f"/discover/{quote(addon_url, safe='')}/{title.type}/{ACTIONS_CATALOG}?genre={ACTIONS_GENRE}"
+    return stremio_links(path, web)
+
+
+NOTE_LINE = 30  # characters per line that fit in a source row on Stremio Web
+
+
+def note_entry(title: Title, web: bool) -> dict:
+    """The film's note as the first Cinémathèque row on its page.
+
+    Stremio cuts long lines instead of wrapping them, so the note is broken
+    into short lines here. Selecting the row just reopens the film's page:
+    Stremio has no text-only rows, and this keeps it harmless.
+    """
+    lines = textwrap.wrap(f"📝 {title.note}", NOTE_LINE, break_long_words=True)
+    return {
+        "name": STREAM_NAME,
+        "description": "\n".join(lines),
+        **stremio_links(f"/detail/{title.type}/{title.imdb_id}/{title.imdb_id}", web),
     }
 
 
@@ -362,7 +386,7 @@ def streams(token: str, type: str, video_id: str, request: Request, db: Session 
 
     base = public_base(request)
     web = from_stremio_web(request)
-    result = []
+    result = [note_entry(title, web)] if title.note else []
     for collection in collections:
         if collection.id in in_collections:
             action, text = "remove", f"✓ In {collection.name}\nSelect to remove"

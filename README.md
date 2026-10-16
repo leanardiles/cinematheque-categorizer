@@ -35,12 +35,13 @@ Working now:
 * React and TypeScript web app in a dark vintage cinema design: library (All and Unsorted), poster grids, a menu to file each film in collections, search, sorting, drag to reorder collections
 * Sync from the Stremio library every 30 minutes (GitHub Actions), with Cinematheque All and Cinematheque Unsorted rows in Stremio
 * Add to or remove from a collection inside Stremio, on web, desktop and TV: each collection appears as a source on the film's page, and selecting it files the film without playing anything
+* Notes on films (who recommended it, why it matters): a note icon on each poster, notes included in search, and shown as the first Cinémathèque entry on the film's page in Stremio
 * Multiple users, invite only: an invite link creates an email and password login, the user connects their Stremio account (by password or access key) and installs their own addon address in one click; every user's data is isolated
 * Security: tokens stored as SHA-256 hashes, passwords as Argon2id hashes with a pause after repeated failures, each user's Stremio auth key encrypted at rest; Stremio passwords are exchanged for an auth key once and never stored
 * Automated backend tests on every push (GitHub Actions), including checks that one user can never read or change another user's data
 * Everything deployed on Vercel; every push to `main` redeploys
 
-Possible next steps: notes on films, Letterboxd import, and filters by director, country and year (see the [roadmap](ROADMAP.md)).
+Possible next steps: Letterboxd import, and filters by director, country and year (see the [roadmap](ROADMAP.md)).
 
 ## How it works
 
@@ -80,7 +81,7 @@ flowchart LR
 | Stremio connection | `POST/DELETE /api/stremio/connect` |
 | Collections | `GET/POST /api/collections`, `PATCH/DELETE /api/collections/{id}`, `PUT /api/collections/order` |
 | Collection contents | `GET/POST /api/collections/{id}/titles`, `DELETE /api/collections/{id}/titles/{title_id}`, `PUT /api/collections/{id}/titles/order` |
-| Library | `GET/POST /api/titles`, `PATCH/DELETE /api/titles/{id}` |
+| Library | `GET/POST /api/titles`, `PATCH/DELETE /api/titles/{id}` (rename, or set the note) |
 | Search | `GET /api/search?q=...&type=movie` |
 | Stremio addon | `GET /{addon_token}/manifest.json`, `GET /{addon_token}/catalog/{type}/{id}.json`, `GET /{addon_token}/stream/{type}/{id}.json` |
 | Collection actions | `GET /{addon_token}/do/{add\|remove}/{collection_id}/{imdb_id}/catalog/...` (reached from the Stremio source links) |
@@ -197,7 +198,7 @@ cinematheque-categorizer/
 │   │   ├── backfill_tmdb.py  One-off: fill TMDB fields for existing titles
 │   │   └── main.py         FastAPI app and CORS
 │   ├── migrations/         Alembic migrations
-│   ├── tests/              pytest suite (accounts, isolation, login, sync)
+│   ├── tests/              pytest suite (accounts, isolation, login, notes, sync)
 │   ├── requirements.txt
 │   └── requirements-dev.txt
 ├── frontend/

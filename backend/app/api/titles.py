@@ -62,6 +62,7 @@ def to_out(title: Title, collection_ids: list[int], sources: list[str]) -> Title
         collection_ids=sorted(collection_ids),
         sources=sorted(sources),
         added_at=title.added_at or title.created_at,
+        note=title.note,
     )
 
 
@@ -128,6 +129,7 @@ def list_titles(
                 Title.name.ilike(pattern),
                 Title.original_title.ilike(pattern),
                 Title.english_name.ilike(pattern),
+                Title.note.ilike(pattern),
             )
         )
     if unsorted:
@@ -212,7 +214,10 @@ def update_title(
     db: Session = Depends(get_db),
 ):
     title = get_owned_title(db, user, title_id)
-    title.name = body.name.strip()
+    if "name" in body.model_fields_set and body.name is not None:
+        title.name = body.name.strip()
+    if "note" in body.model_fields_set:
+        title.note = body.note
     db.commit()
     return titles_out(db, [title])[0]
 

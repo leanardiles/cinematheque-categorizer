@@ -15,6 +15,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
+NOTE_MAX = 120  # characters in a film's note
+
 
 class User(Base):
     __tablename__ = "users"
@@ -81,6 +83,9 @@ class Title(Base):
     tmdb_id: Mapped[int | None] = mapped_column(Integer)
     year: Mapped[int | None] = mapped_column(Integer)
     poster: Mapped[str | None] = mapped_column(Text)
+    # The user's own note (who recommended it, why it matters). Short, so it
+    # fits fully on the film's page in Stremio
+    note: Mapped[str | None] = mapped_column(String(NOTE_MAX))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

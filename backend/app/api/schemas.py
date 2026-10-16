@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.models import NOTE_MAX
 
 class CollectionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
@@ -38,6 +40,7 @@ class TitleOut(BaseModel):
     collection_ids: list[int]
     sources: list[str]
     added_at: datetime
+    note: str | None
 
 
 class TitleCreate(BaseModel):
@@ -56,7 +59,20 @@ class TitleCreate(BaseModel):
 
 
 class TitleUpdate(BaseModel):
-    name: str = Field(min_length=1, max_length=300)
+    """Only the fields sent are changed. An empty note clears it."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=300)
+    note: str | None = None
+
+    @field_validator("note")
+    @classmethod
+    def clean_note(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = " ".join(value.split())  # one line: Stremio shows it in a narrow row
+        if len(value) > NOTE_MAX:
+            raise ValueError(f"A note can be at most {NOTE_MAX} characters")
+        return value or None
 
 
 class SearchResult(BaseModel):

@@ -22,7 +22,11 @@ export interface Title {
   sources: string[];
   /** ISO date: when the film was saved to the library */
   added_at: string;
+  /** The user's own note, up to 120 characters */
+  note: string | null;
 }
+
+export const NOTE_MAX = 120;
 
 export interface SearchResult {
   tmdb_id: number;

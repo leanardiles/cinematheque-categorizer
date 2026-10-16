@@ -7,14 +7,16 @@ export function normalize(text: string): string {
 
 /**
  * True when every word of the query appears in the film's display name,
- * original title or English title. "nine queens" finds Nueve reinas;
- * "cienaga" finds La Ciénaga.
+ * original title, English title or note. "nine queens" finds Nueve reinas;
+ * "cienaga" finds La Ciénaga; "ana" finds the films Ana recommended.
  */
 export function matchesQuery(title: Title, query: string): boolean {
   const words = normalize(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return true;
   const haystack = normalize(
-    [title.name, title.original_title, title.english_name].filter(Boolean).join(' '),
+    [title.name, title.original_title, title.english_name, title.note]
+      .filter(Boolean)
+      .join(' '),
   );
   return words.every((word) => haystack.includes(word));
 }

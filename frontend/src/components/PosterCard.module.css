@@ -5,10 +5,14 @@
   gap: 4px;
 }
 
+.frameWrap {
+  position: relative;
+  margin-bottom: 6px;
+}
+
 .frame {
   position: relative;
   aspect-ratio: 2 / 3;
-  margin-bottom: 6px;
   border-radius: 3px;
   overflow: hidden;
   background: var(--color-surface-raised);
@@ -58,9 +62,38 @@
 
 @media (hover: none) {
   .remove,
-  .menuSlot {
+  .menuSlot,
+  .noteSlot {
     opacity: 1;
   }
+}
+
+/* Note icon, bottom right of the poster. Always shown when the film has a
+   note, so notes stand out when scanning the grid; otherwise on hover. */
+.noteSlot {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  /* Spans the poster's width, so the note editor can use it without spilling
+     past the poster's edges; only the icon and the editor take clicks */
+  left: 8px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.noteSlot > * {
+  pointer-events: auto;
+}
+
+.card:hover .noteSlot,
+.noteSlot:focus-within,
+.noteSlot:has([data-has-note]),
+.noteSlot:has([aria-expanded='true']) {
+  opacity: 1;
 }
 
 /* Collections menu, over the top left of the poster (outside the frame so its
