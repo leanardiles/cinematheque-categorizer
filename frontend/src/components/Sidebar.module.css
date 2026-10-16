@@ -5,6 +5,8 @@
      collection list never makes the whole page scroll */
   height: 100%;
   overflow-y: auto;
+  /* Nothing in the sidebar should ever need sideways scrolling */
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -16,15 +18,25 @@
 .brand {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
+  text-align: center;
 }
 
+/* 30px at most; Sidebar.tsx shrinks it to fit the width when needed */
 .logo {
+  width: 100%;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 30px;
   line-height: 1;
+  white-space: nowrap;
   color: var(--color-accent);
+}
+
+/* Letter spacing also follows the last letter; this balances it when centered */
+.tagline {
+  padding-left: 0.24em;
 }
 
 .tagline,
@@ -101,6 +113,21 @@
 
 .item[aria-current='page'] .count {
   color: var(--color-accent);
+}
+
+/* Collections: a size smaller than All, so long names fit on one line more often */
+.row .item {
+  min-height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.row .count {
+  padding-left: 8px;
+  font-size: 12px;
 }
 
 /* Sortable collection rows */

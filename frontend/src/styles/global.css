@@ -53,3 +53,34 @@ h3 {
   font-family: var(--font-display);
   margin: 0;
 }
+/* Scrollbars in the theme colors: thin, on a transparent track, a little
+   brighter while the pointer is over the scrolling area */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+*:hover {
+  scrollbar-color: var(--color-text-muted) transparent;
+}
+
+/* Safari, which doesn't support scrollbar-color yet */
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: var(--color-border-strong);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+}

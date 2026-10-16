@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -55,6 +55,28 @@ export default function Sidebar({
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const logoRef = useRef<HTMLDivElement>(null);
+
+  // Shrink the logo to fit when the sidebar is narrower than usual: a visible
+  // scrollbar, browser zoom, or a different font rendering
+  useEffect(() => {
+    const logo = logoRef.current;
+    if (!logo) return;
+    const fit = () => {
+      logo.style.fontSize = ''; // back to the size set in the CSS
+      const needed = logo.scrollWidth;
+      const available = logo.clientWidth;
+      if (needed > available) {
+        const size = parseFloat(getComputedStyle(logo).fontSize);
+        logo.style.fontSize = `${Math.floor((size * available * 10) / needed) / 10}px`;
+      }
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(logo);
+    document.fonts?.ready.then(fit); // the display font may arrive after the first render
+    return () => observer.disconnect();
+  }, []);
 
   const sensors = useSensors(
     // A 6px move starts a drag, so a plain click still selects the collection
@@ -90,7 +112,9 @@ export default function Sidebar({
   return (
     <nav className={styles.sidebar} aria-label="Main">
       <div className={styles.brand}>
-        <div className={styles.logo}>Cinémathèque</div>
+        <div ref={logoRef} className={styles.logo}>
+          Cinémathèque
+        </div>
         <div className={styles.tagline}>Salle de projection</div>
       </div>
 
