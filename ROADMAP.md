@@ -84,7 +84,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] Environment variables in Vercel
 - [x] Install the production manifest in Stremio; save the URL in 1Password
 - [x] Test on Stremio Web and TV
-- [ ] Check the Vercel function region is close to the Supabase region
+- [x] Function region next to the database: Supabase is in `us-west-2` (Oregon), so the API runs in `pdx1` (Portland), set in `backend/vercel.json` (it ran in the default `iad1`, Washington, before)
 
 ## Milestone 5: Stremio library sync (done)
 
