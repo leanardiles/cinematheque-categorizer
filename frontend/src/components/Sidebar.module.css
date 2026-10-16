@@ -1,6 +1,10 @@
 .sidebar {
   width: 264px;
   flex-shrink: 0;
+  /* One screen tall, scrolling on its own like the poster panel, so a long
+     collection list never makes the whole page scroll */
+  height: 100%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 32px;
