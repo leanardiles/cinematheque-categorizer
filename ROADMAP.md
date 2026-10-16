@@ -19,7 +19,7 @@ The first goal is **collections**: named groups of films from my library (for ex
 - [x] SQLAlchemy engine for the Supabase transaction pooler (prepared statements disabled, `NullPool`)
 - [x] Alembic set up for migrations; initial migration applied
 - [x] Models, all scoped by `user_id` for future multi-user support:
-  - `users`: id, name (addon token stays in environment variables until multi-user support)
+  - `users`: id, name (tokens lived in environment variables until accounts arrived in Milestone 7)
   - `titles`: user, IMDb ID, type, name, year, poster; unique on (user, IMDb ID)
   - `title_sources`: title, source (`manual` for now), first seen, last seen, still present
   - `collections`: user, name, description, position
@@ -115,12 +115,29 @@ Stremio lets addons add sources to a film's page, not buttons, so each collectio
 
 Tried first and dropped: redirecting to a short confirmation clip (playing it marked films as watched and added them to Continue Watching), and passing the action as a search value (the TV app drops free-text values from Discover links).
 
+## Milestone 7: Multiple users (done)
+
+Invite only, for a few friends. Each user has their own library, collections, Stremio connection and addon address.
+
+- [x] `user_tokens` table: web and addon tokens per user, stored as SHA-256 hashes, each with a label, last use and revocation
+- [x] The single-user tokens and Stremio key moved into the first account (`import-env`), so the existing addon and sign-in kept working without reinstalling
+- [x] Each user's Stremio auth key encrypted at rest (Fernet, `ENCRYPTION_KEY`)
+- [x] Sync runs per user with their own key; one user's failure doesn't stop the others but still fails the scheduled job, so it gets noticed
+- [x] Invite command and single-use invite links (the token travels after the `#`, so it never reaches server logs, and is removed from the address bar)
+- [x] Email and password login: Argon2id hashes, the same answer and timing for a wrong email or a wrong password, a 15-minute pause after 5 failures, one session per device, sign-out ends that session
+- [x] Forgotten password: `new-link` sends a link that lets the user choose a new password
+- [x] Connect Stremio in the web app: email and password exchanged for an auth key once (never stored), or a pasted access key for Google, Facebook and Apple sign-ins
+- [x] Personal addon address with one-click install for the Stremio app and Stremio Web
+- [x] Account links in the sidebar: install in Stremio, set up or change the login, disconnect Stremio, sign out
+- [x] Backend tests (pytest, in-memory SQLite) and a Tests workflow on GitHub Actions, including isolation between users
+
 ## Later
 
+- [ ] Notes on films (for example recommended by a friend), shown in the web app and as the first Cinémathèque entry on the film's page in Stremio
 - [ ] Drag a poster from All onto a collection in the sidebar to add it (dnd-kit, one shared drag context for posters and collection reordering; the menu stays as the accessible way)
 - [ ] Decide whether the app can add films itself, and how: TMDB search adding films that aren't in the Stremio library (two kinds of films, different delete rules), or adding them here and to the Stremio library at the same time (one source of truth, but writes through the unofficial Stremio API)
 - [ ] Letterboxd watchlist import (via the Letterboxd addon catalog, with CSV export as fallback)
 - [ ] TMDB enrichment: directors, cast, countries, genres, year
 - [ ] Filter catalogs by director, country, year and actor, with `search` syntax such as `director:almodovar year:1990-2005`
-- [ ] Multi-user support: accounts and one addon token per user
-- [ ] Tests for catalog routes and collection ordering
+- [ ] Password reset by email (needs an email service; for now `new-link` covers it)
+- [ ] More tests: catalog paging, collection ordering, sync edge cases
