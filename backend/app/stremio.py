@@ -64,3 +64,23 @@ def fetch_library(auth_key: str) -> list[LibraryEntry]:
             modified=_parse_time(item.get("_mtime")),
         )
     return list(entries.values())
+
+def login(email: str, password: str) -> str:
+    """Exchange a Stremio email and password for an auth key.
+
+    The password is sent to Stremio only and never stored or logged here.
+    Raises StremioError when Stremio rejects the sign-in.
+    """
+    with httpx.Client(timeout=TIMEOUT) as client:
+        response = client.post(
+            f"{API_URL}/login",
+            json={"type": "Login", "email": email, "password": password, "facebook": False},
+        )
+    response.raise_for_status()
+    data = response.json()
+    if "error" in data:
+        raise StremioError(data["error"].get("message", "Unknown Stremio error"))
+    auth_key = (data.get("result") or {}).get("authKey")
+    if not auth_key:
+        raise StremioError("Stremio did not return an auth key")
+    return auth_key

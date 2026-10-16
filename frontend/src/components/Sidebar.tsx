@@ -30,6 +30,9 @@ interface Props {
   onCreateCollection: (name: string) => Promise<string | null>;
   /** Called with every collection ID in the new order after a drag. */
   onReorderCollections: (ids: number[]) => void;
+  /** Whether an email and password login exists */
+  hasLogin: boolean;
+  onOpenAccount: () => void;
   onInstallAddon: () => void;
   onDisconnectStremio: () => void;
   onSignOut: () => void;
@@ -42,6 +45,8 @@ export default function Sidebar({
   onSelect,
   onCreateCollection,
   onReorderCollections,
+  hasLogin,
+  onOpenAccount,
   onInstallAddon,
   onDisconnectStremio,
   onSignOut,
@@ -185,6 +190,9 @@ export default function Sidebar({
 
       <div className={styles.footer}>
         <div className={styles.footerLinks}>
+          <button type="button" className={styles.signOut} onClick={onOpenAccount}>
+            {hasLogin ? 'Change login' : 'Set up email login'}
+          </button>
           <button type="button" className={styles.signOut} onClick={onInstallAddon}>
             Install in Stremio
           </button>

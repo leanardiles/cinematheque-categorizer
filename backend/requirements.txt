@@ -6,3 +6,4 @@ alembic
 psycopg[binary]
 httpx
 cryptography
+argon2-cffi

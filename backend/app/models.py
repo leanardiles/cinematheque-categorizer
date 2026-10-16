@@ -21,8 +21,11 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
-    # Not used yet; ready for an email and password login later
+    # Email and password login (optional: tokens and invite links work without)
     email: Mapped[str | None] = mapped_column(String(254), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(Text)  # Argon2id, see app/accounts.py
+    login_failures: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    login_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # The user's Stremio auth key, encrypted (see app/accounts.py); empty
     # until they connect their Stremio account
     stremio_auth_key: Mapped[str | None] = mapped_column(Text)

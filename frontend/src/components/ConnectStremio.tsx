@@ -77,10 +77,10 @@ export default function ConnectStremio({ name, onDone, onUnauthorized, onSignOut
   return (
     <main className={styles.screen}>
       <form className={styles.card} onSubmit={handleSubmit}>
-        <h1 className={styles.title}>Welcome, {name}</h1>
+        <h1 className={styles.title}>Connect Stremio</h1>
         <p className={styles.note}>
-          Connect your Stremio account so Cinémathèque can read the films saved in your library and
-          keep them in sync.
+          {name}, connect your Stremio account so Cinémathèque can read the films saved in your
+          library and keep them in sync.
         </p>
 
         {method === 'password' ? (

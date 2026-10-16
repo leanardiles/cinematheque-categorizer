@@ -77,3 +77,32 @@
   opacity: 0.6;
   cursor: default;
 }
+.notice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.switch {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.switch:hover {
+  color: var(--color-accent);
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

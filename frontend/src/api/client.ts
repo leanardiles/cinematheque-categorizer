@@ -1,6 +1,7 @@
 import type {
   AddonLink,
   Collection,
+  LoginResult,
   Me,
   SearchResult,
   StremioConnectResult,
@@ -31,9 +32,15 @@ export const tokenStore = {
  * removes it from the address bar, so it isn't left in the history or
  * copied along with the address. Runs once, before the app renders.
  */
+let openedInvite = false;
+
+/** Whether this visit started from an invite link (to explain a used-up link). */
+export const openedFromInvite = () => openedInvite;
+
 export function takeInviteToken(): void {
   const match = window.location.hash.match(/^#invite=([\w-]+)$/);
   if (!match) return;
+  openedInvite = true;
   tokenStore.set(match[1]);
   const { pathname, search } = window.location;
   window.history.replaceState(null, '', pathname + search);
@@ -71,6 +78,11 @@ async function request<T>(
 export const api = {
   // Account
   me: (token?: string) => request<Me>('/api/me', { token }),
+  login: (email: string, password: string) =>
+    request<LoginResult>('/api/login', { method: 'POST', body: { email, password } }),
+  logout: (token?: string) => request<void>('/api/logout', { method: 'POST', token }),
+  setLogin: (body: { email: string; password: string; current_password?: string }) =>
+    request<LoginResult & { email: string }>('/api/me/login', { method: 'POST', body }),
   connectStremio: (
     credentials: { email: string; password: string } | { auth_key: string },
   ) =>

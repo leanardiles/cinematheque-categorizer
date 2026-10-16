@@ -40,7 +40,16 @@ export interface SearchResult {
 export interface Me {
   id: number;
   name: string;
+  /** The login email, once a password login exists */
+  email: string | null;
+  has_password: boolean;
+  /** Signed in with an invite link: time to create (or reset) the login */
+  via_invite: boolean;
   stremio_connected: boolean;
+}
+
+export interface LoginResult {
+  token: string;
 }
 
 export interface SyncReport {

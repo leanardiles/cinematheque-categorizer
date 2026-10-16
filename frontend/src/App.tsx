@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError, tokenStore } from './api/client';
+import { api, ApiError, openedFromInvite, tokenStore } from './api/client';
 import type { Collection, Me } from './api/types';
+import AccountDialog from './components/AccountDialog';
 import AddonDialog from './components/AddonDialog';
 import CollectionView from './components/CollectionView';
 import ConfirmDialog from './components/ConfirmDialog';
 import ConnectStremio from './components/ConnectStremio';
+import CreateLogin from './components/CreateLogin';
 import LibraryView from './components/LibraryView';
 import SearchBar from './components/SearchBar';
 import Sidebar, { type View } from './components/Sidebar';
@@ -16,6 +18,9 @@ export default function App() {
   // Who is signed in; null while loading
   const [me, setMe] = useState<Me | null>(null);
   const [addonOpen, setAddonOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  // Explains why the sign-in screen is showing, e.g. after a used invite link
+  const [notice, setNotice] = useState<string | null>(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
@@ -25,6 +30,9 @@ export default function App() {
   const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
 
   const signOut = useCallback(() => {
+    // Ends this device's login session; invite links and tokens just stay valid
+    const token = tokenStore.get();
+    if (token) api.logout(token).catch(() => {});
     tokenStore.clear();
     setAuthenticated(false);
     setMe(null);
@@ -53,16 +61,26 @@ export default function App() {
       });
   }, [signOut]);
 
-  useEffect(() => {
-    if (!authenticated) return;
+  const reloadMe = useCallback(() => {
     api
       .me()
       .then(setMe)
       .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) signOut();
-        else setError('Could not reach the server.');
+        if (err instanceof ApiError && err.status === 401) {
+          signOut();
+          if (openedFromInvite()) {
+            setNotice(
+              'This invite link has already been used. Sign in with your email and password, ' +
+                'or ask for a new link.',
+            );
+          }
+        } else setError('Could not reach the server.');
       });
-  }, [authenticated, signOut]);
+  }, [signOut]);
+
+  useEffect(() => {
+    if (authenticated) reloadMe();
+  }, [authenticated, reloadMe]);
 
   const connected = me?.stremio_connected === true;
   useEffect(() => {
@@ -112,11 +130,31 @@ export default function App() {
   }
 
   if (!authenticated) {
-    return <TokenScreen onAuthenticated={() => setAuthenticated(true)} />;
+    return (
+      <TokenScreen
+        notice={notice}
+        onAuthenticated={() => {
+          setNotice(null);
+          setAuthenticated(true);
+        }}
+      />
+    );
   }
 
   if (me === null) {
     return error ? <p role="alert">{error}</p> : null;
+  }
+
+  if (me.via_invite) {
+    return (
+      <CreateLogin
+        name={me.name}
+        email={me.email}
+        reset={me.has_password}
+        onSaved={reloadMe}
+        onUnauthorized={signOut}
+      />
+    );
   }
 
   if (!me.stremio_connected) {
@@ -149,9 +187,21 @@ export default function App() {
         onSelect={selectView}
         onCreateCollection={createCollection}
         onReorderCollections={reorderCollections}
+        hasLogin={me.has_password}
+        onOpenAccount={() => setAccountOpen(true)}
         onInstallAddon={() => setAddonOpen(true)}
         onDisconnectStremio={() => setConfirmDisconnect(true)}
         onSignOut={signOut}
+      />
+      <AccountDialog
+        open={accountOpen}
+        me={me}
+        onClose={() => setAccountOpen(false)}
+        onSaved={() => {
+          setAccountOpen(false);
+          reloadMe();
+        }}
+        onUnauthorized={signOut}
       />
       <AddonDialog
         open={addonOpen}
