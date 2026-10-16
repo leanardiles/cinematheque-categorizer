@@ -1,25 +1,31 @@
 """Show what a sync would change, without changing anything.
 
-Run from backend/ with the venv active:
-    op run --env-file=../.env.op -- python -m app.sync_preview
+Run from backend/ with the venv active (optionally with a user ID; default
+the first user):
+    op run --env-file=../.env.op -- python -m app.sync_preview [user_id]
 """
+
+import sys
 
 from sqlalchemy import select
 
-from app import stremio
 from app.db import SessionLocal
 from app.models import User
-from app.sync import plan
+from app.sync import fetch_library, plan
 
 SHOW = 10  # names listed per group
 
 
 def main() -> None:
-    entries = stremio.fetch_library()
-    print(f"Stremio library: {len(entries)} films and series")
-
     with SessionLocal() as db:
-        user = db.scalar(select(User).order_by(User.id).limit(1))
+        if len(sys.argv) > 1:
+            user = db.get(User, int(sys.argv[1]))
+        else:
+            user = db.scalar(select(User).order_by(User.id).limit(1))
+        if user is None:
+            sys.exit("User not found.")
+        entries = fetch_library(user)
+        print(f"{user.name}'s Stremio library: {len(entries)} films and series")
         result = plan(db, user, entries)
 
     print(f"\nWould add {len(result.new)}:")

@@ -5,8 +5,6 @@ from datetime import datetime
 
 import httpx
 
-from app.config import settings
-
 API_URL = "https://api.strem.io/api"
 TIMEOUT = httpx.Timeout(30.0)
 TYPES = ("movie", "series")
@@ -35,13 +33,13 @@ def _parse_time(value: object) -> datetime | None:
         return None
 
 
-def fetch_library() -> list[LibraryEntry]:
-    """Films and series saved in the Stremio library (not removed, IMDb IDs only)."""
+def fetch_library(auth_key: str) -> list[LibraryEntry]:
+    """Films and series saved in a user's Stremio library (not removed, IMDb IDs only)."""
     with httpx.Client(timeout=TIMEOUT) as client:
         response = client.post(
             f"{API_URL}/datastoreGet",
             json={
-                "authKey": settings.stremio_auth_key,
+                "authKey": auth_key,
                 "collection": "libraryItem",
                 "ids": [],
                 "all": True,

@@ -15,10 +15,23 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import stremio, tmdb
+from app.accounts import stremio_key
 from app.models import Title, TitleSource, User
 from app.stremio import LibraryEntry
 
 SOURCE = "stremio"
+
+
+class NotConnected(Exception):
+    """The user hasn't connected a Stremio account."""
+
+
+def fetch_library(user: User) -> list[LibraryEntry]:
+    """The user's Stremio library, using their own auth key."""
+    auth_key = stremio_key(user)
+    if auth_key is None:
+        raise NotConnected
+    return stremio.fetch_library(auth_key)
 
 
 @dataclass
@@ -158,8 +171,8 @@ def apply(db: Session, user: User, result: SyncPlan, limit: int | None = 50) -> 
 
 
 def run(db: Session, user: User, limit: int | None = 50) -> SyncReport:
-    """Fetch the Stremio library, plan and apply. Used by the endpoint and the CLI."""
-    entries = stremio.fetch_library()
+    """Fetch the user's Stremio library, plan and apply. Used by the endpoint and the CLI."""
+    entries = fetch_library(user)
     return apply(db, user, plan(db, user, entries), limit=limit)
 
 def sync_one(db: Session, user: User, imdb_id: str) -> Title | None:
@@ -170,7 +183,7 @@ def sync_one(db: Session, user: User, imdb_id: str) -> Title | None:
     (or Stremio can't be reached; the scheduled sync will catch up).
     """
     try:
-        entries = stremio.fetch_library()
+        entries = fetch_library(user)
     except Exception:
         return None
     entry = next((e for e in entries if e.imdb_id == imdb_id), None)

@@ -13,5 +13,5 @@ router.include_router(sync.router)
 
 @router.get("/me")
 def me(user: User = Depends(require_api_user)):
-    """Quick check that the API token works."""
-    return {"id": user.id, "name": user.name}
+    """Who the token belongs to, and whether their Stremio account is connected."""
+    return {"id": user.id, "name": user.name, "stremio_connected": user.stremio_auth_key is not None}

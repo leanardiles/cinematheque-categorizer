@@ -2,10 +2,9 @@ import secrets
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.accounts import WEB, user_for_token
 from app.db import get_db
 from app.models import User
 
@@ -18,23 +17,19 @@ def tokens_match(given: str | None, expected: str) -> bool:
     return given is not None and secrets.compare_digest(given, expected)
 
 
-def current_user(db: Session) -> User:
-    # Single user for now; with multi-user support the token will identify the user
-    user = db.scalar(select(User).order_by(User.id).limit(1))
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return user
+def unauthorized() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def require_api_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> User:
-    """Protects the management API: requires Authorization: Bearer <API_TOKEN>."""
-    token = credentials.credentials if credentials else None
-    if not tokens_match(token, settings.api_token):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return current_user(db)
+    """Protects the management API: Authorization: Bearer <the user's web token>."""
+    user = user_for_token(db, WEB, credentials.credentials if credentials else None)
+    if user is None:
+        raise unauthorized()
+    return user

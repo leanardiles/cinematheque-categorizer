@@ -21,9 +21,44 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    # Not used yet; ready for an email and password login later
+    email: Mapped[str | None] = mapped_column(String(254), unique=True)
+    # The user's Stremio auth key, encrypted (see app/accounts.py); empty
+    # until they connect their Stremio account
+    stremio_auth_key: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+    tokens: Mapped[list["UserToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class UserToken(Base):
+    """A secret that identifies a user: a web app sign-in or an addon address.
+
+    Only a SHA-256 hash is stored, so a database leak doesn't reveal working
+    tokens. A future password login would issue web tokens here too, one per
+    signed-in device, and signing out would revoke them.
+    """
+
+    __tablename__ = "user_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(10))  # "web" or "addon"
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    label: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped["User"] = relationship(back_populates="tokens")
 
 
 class Title(Base):

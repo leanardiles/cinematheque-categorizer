@@ -5,10 +5,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
+from app.accounts import ADDON, user_for_token
 from app.config import settings
 from app.db import get_db
-from app.deps import current_user, tokens_match
-from app.models import Collection, CollectionTitle, Title
+from app.models import Collection, CollectionTitle, Title, User
 
 router = APIRouter()
 
@@ -22,9 +22,13 @@ ACTIONS_CATALOG = "cinematheque-actions"
 ACTIONS_GENRE = "Actions"
 
 
-def check_token(token: str) -> None:
-    if not tokens_match(token, settings.addon_token):
+def addon_user(db: Session, token: str) -> User:
+    """The user whose addon address this is. Unknown tokens get a plain 404,
+    so the address reveals nothing to someone guessing."""
+    user = user_for_token(db, ADDON, token)
+    if user is None:
         raise HTTPException(status_code=404)
+    return user
 
 
 def cached(content: dict) -> JSONResponse:
@@ -52,8 +56,7 @@ def library_types(db: Session, user_id: int) -> list[str]:
 
 @router.get("/{token}/manifest.json")
 def manifest(token: str, db: Session = Depends(get_db)):
-    check_token(token)
-    user = current_user(db)
+    user = addon_user(db, token)
 
     collections = db.scalars(
         select(Collection)
@@ -124,8 +127,7 @@ def to_meta(title: Title) -> dict:
 def catalog_response(
     token: str, type: str, catalog_id: str, extra: str | None, db: Session
 ) -> JSONResponse:
-    check_token(token)
-    user = current_user(db)
+    user = addon_user(db, token)
 
     params = parse_extra(extra)
     try:
@@ -253,7 +255,9 @@ def action_links(
     }
 
 
-def run_action(db: Session, action: str, collection_id: int, imdb_id: str) -> list[dict]:
+def run_action(
+    db: Session, user: User, action: str, collection_id: int, imdb_id: str
+) -> list[dict]:
     """Add or remove a film and answer with one confirmation card.
 
     Explicit add or remove (never toggle), so Stremio requesting the address
@@ -261,7 +265,6 @@ def run_action(db: Session, action: str, collection_id: int, imdb_id: str) -> li
     """
     from app.api.titles import add_to_collection  # shared with the web app's API
 
-    user = current_user(db)
     collection = db.get(Collection, collection_id)
     title = db.scalar(select(Title).where(Title.user_id == user.id, Title.imdb_id == imdb_id))
     if collection is None or collection.user_id != user.id or title is None:
@@ -281,9 +284,11 @@ def run_action(db: Session, action: str, collection_id: int, imdb_id: str) -> li
 
 
 @router.get(ACTION_PREFIX + "/manifest.json")
-def action_manifest(token: str, action: str, collection_id: int, imdb_id: str):
+def action_manifest(
+    token: str, action: str, collection_id: int, imdb_id: str, db: Session = Depends(get_db)
+):
     """What Stremio sees at an action address: only the actions catalog."""
-    check_token(token)
+    addon_user(db, token)
     if action not in ACTIONS:
         raise HTTPException(status_code=404)
     return not_cached(
@@ -321,16 +326,15 @@ def action_catalog(
     extra: str | None = None,
     db: Session = Depends(get_db),
 ):
-    check_token(token)
+    user = addon_user(db, token)
     if action not in ACTIONS or catalog_id != ACTIONS_CATALOG:
         return not_cached({"metas": []})
-    return not_cached({"metas": run_action(db, action, collection_id, imdb_id)})
+    return not_cached({"metas": run_action(db, user, action, collection_id, imdb_id)})
 
 
 @router.get("/{token}/stream/{type}/{video_id}.json")
 def streams(token: str, type: str, video_id: str, request: Request, db: Session = Depends(get_db)):
-    check_token(token)
-    user = current_user(db)
+    user = addon_user(db, token)
 
     # Series episodes arrive as tt1234567:1:2; collections hold the series itself
     imdb_id = video_id.split(":")[0]
